@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HN-Center Mental Math</title>
 <style>
-/* نفس الستايل اللي عملناه سابقاً */
 body{font-family:Arial,sans-serif;text-align:center;background:#fff;color:#000;direction:rtl;margin:0;padding:0;}
 .container{max-width:750px;margin:20px auto;background:#fff;padding:20px;border-radius:15px;box-shadow:0 0 15px rgba(0,0,0,0.2);}
 input,select,button{padding:12px;margin:8px;border-radius:10px;border:1px solid #0297b9;font-size:16px;width:80%;}
@@ -91,12 +90,10 @@ th{background:#e20e63;color:white;}
 <p id="customMsg"></p>
 </div>
 
-<!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-app.js";
 import { getFirestore, collection, getDocs, addDoc, query, where } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-firestore.js";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
   authDomain: "hn-center.firebaseapp.com",
@@ -110,10 +107,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ==== المتغيرات ====
-let studentName="",level=0,questions=[],answers=[],currentQ=0,startTime,timerInterval;
+let studentName="", level=0, questions=[], answers=[], currentQ=0, startTime, timerInterval;
 
-// ==== الطالب ====
 async function startExam(){
  studentName=document.getElementById('studentName').value.trim();
  level=parseInt(document.getElementById('level').value);
@@ -172,6 +167,7 @@ function selectAnswer(val,btn){
 
 function prevQ(){if(currentQ>0){currentQ--;showQ();}}
 function nextQ(){if(currentQ<questions.length-1){currentQ++;showQ();}else{finishExam();}}
+
 async function finishExam(){
  clearInterval(timerInterval);
  let correct=0; questions.forEach((q,i)=>{if(answers[i]===q.answer) correct++;});
@@ -183,7 +179,6 @@ async function finishExam(){
  document.getElementById('wrongCount').textContent=wrong;
  document.getElementById('timeSpent').textContent=timeSpent;
 
- // حفظ على Firebase
  await addDoc(collection(db,"archive"),{
    name:studentName,
    level:level,
@@ -194,7 +189,6 @@ async function finishExam(){
  });
 }
 
-// ==== Timer ====
 function startTimer(){
  timerInterval=setInterval(()=>{
    let elapsed=Math.floor((Date.now()-startTime)/1000);
@@ -209,7 +203,6 @@ function updateProgress(){
  document.getElementById('progress').style.width=percent+"%";
 }
 
-// ==== المعلم ====
 async function teacherLogin(){
  let name=document.getElementById('teacherName').value.trim();
  let pass=document.getElementById('teacherPass').value;
@@ -240,6 +233,11 @@ async function addTeacherQuestion(){
  document.getElementById('customMsg').textContent="تم إضافة السؤال!";
  document.getElementById('customQuestion').value="";
  document.getElementById('customAnswer').value="";
+}
+
+function backToLogin(){
+ document.getElementById('archive').classList.add('hidden');
+ document.getElementById('login').classList.remove('hidden');
 }
 </script>
 </body>
