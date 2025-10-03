@@ -1,11 +1,11 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HN-Center Mental Math</title>
 <style>
-/* نفس الـ CSS الموجود عندك */
+/* نفس الستايل اللي عملناه سابقاً */
 body{font-family:Arial,sans-serif;text-align:center;background:#fff;color:#000;direction:rtl;margin:0;padding:0;}
 .container{max-width:750px;margin:20px auto;background:#fff;padding:20px;border-radius:15px;box-shadow:0 0 15px rgba(0,0,0,0.2);}
 input,select,button{padding:12px;margin:8px;border-radius:10px;border:1px solid #0297b9;font-size:16px;width:80%;}
@@ -78,22 +78,9 @@ th{background:#e20e63;color:white;}
 <tbody id="archiveBody"></tbody>
 </table>
 <div class="nav-btns">
-<button onclick="clearArchive()">مسح الأرشيف</button>
 <button onclick="backToLogin()">العودة للرئيسية</button>
 </div>
-<hr>
-<h3>نماذج الأسئلة</h3>
-<select id="modelSelect" onchange="showModel()">
-<option value="0">النموذج 1</option>
-<option value="1">النموذج 2</option>
-<option value="2">النموذج 3</option>
-</select>
-<div id="modelContainer"></div>
-<div class="nav-btns">
-<button onclick="prevModel()">النموذج السابق</button>
-<button onclick="nextModel()">النموذج التالي</button>
-</div>
-<h3>إضافة سؤال جديد للنموذج الحالي</h3>
+<h3>إضافة سؤال جديد</h3>
 <select id="customLevel">
 <option value="0">المستوى 0</option>
 <option value="2">المستوى 2</option>
@@ -104,19 +91,35 @@ th{background:#e20e63;color:white;}
 <p id="customMsg"></p>
 </div>
 
-<script>
-let studentName="",level=0,questions=[],answers=[],currentQ=0,startTime,timerInterval;
-let currentModel=0;
-let models=[[],[],[]];
-if(localStorage.getItem('models')) models=JSON.parse(localStorage.getItem('models'));
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-app.js";
+import { getFirestore, collection, getDocs, addDoc, query, where } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-firestore.js";
 
-// ======= الطالب =======
-function startExam(){
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
+  authDomain: "hn-center.firebaseapp.com",
+  projectId: "hn-center",
+  storageBucket: "hn-center.appspot.com",
+  messagingSenderId: "985828603143",
+  appId: "1:985828603143:web:defd2e10a864825dc401a2",
+  measurementId: "G-RTE2ZPTHM1"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ==== المتغيرات ====
+let studentName="",level=0,questions=[],answers=[],currentQ=0,startTime,timerInterval;
+
+// ==== الطالب ====
+async function startExam(){
  studentName=document.getElementById('studentName').value.trim();
- level=document.getElementById('level').value;
+ level=parseInt(document.getElementById('level').value);
  if(!studentName){alert("ادخل اسم الطالب"); return;}
- loadExamQuestions();
- if(questions.length===0){alert("لا توجد أسئلة لهذا المستوى، المعلم يجب أن يضيف أسئلة."); return;}
+ await loadExamQuestions();
+ if(questions.length===0){alert("لا توجد أسئلة لهذا المستوى"); return;}
  document.getElementById('login').classList.add('hidden');
  document.getElementById('exam').classList.remove('hidden');
  document.getElementById('examTitle').textContent="امتحان المستوى "+level;
@@ -126,16 +129,26 @@ function startExam(){
  showQ();
 }
 
-function loadExamQuestions(){
+async function loadExamQuestions(){
  questions=[];
  answers=[];
- let allQs=models.flat();
- let lvlQs=allQs.filter(q=>q.level==level);
- questions=shuffleArray(lvlQs);
+ const qCol = collection(db,"questions");
+ const qSnap = await getDocs(query(qCol, where("level","==",level)));
+ qSnap.forEach(doc=>questions.push(doc.data()));
  answers=new Array(questions.length).fill(null);
 }
 
-function shuffleArray(array){return array.sort(()=>Math.random()-0.5);}
+function shuffleArray(arr){return arr.sort(()=>Math.random()-0.5);}
+function shuffleOptions(correct){
+ let opts=[correct];
+ while(opts.length<4){
+   let d=correct+Math.floor(Math.random()*5)-2;
+   if(d<1)d=1;if(d>99)d=99;
+   if(!opts.includes(d)) opts.push(d);
+ }
+ return shuffleArray(opts);
+}
+
 function showQ(){
  let q=questions[currentQ];
  document.getElementById('qNum').textContent=currentQ+1;
@@ -150,17 +163,18 @@ function showQ(){
  document.getElementById('options').innerHTML=opsHTML;
  updateProgress();
 }
+
 function selectAnswer(val,btn){
  answers[currentQ]=val;
- let buttons=document.querySelectorAll('.options button');
- buttons.forEach(b=>b.classList.remove('correct','incorrect'));
- if(val===questions[currentQ].answer){btn.classList.add('correct');}else{btn.classList.add('incorrect');}
+ document.querySelectorAll('.options button').forEach(b=>b.classList.remove('correct','incorrect'));
+ if(val===questions[currentQ].answer) btn.classList.add('correct'); else btn.classList.add('incorrect');
 }
+
 function prevQ(){if(currentQ>0){currentQ--;showQ();}}
 function nextQ(){if(currentQ<questions.length-1){currentQ++;showQ();}else{finishExam();}}
-function finishExam(){
+async function finishExam(){
  clearInterval(timerInterval);
- let correct=0; questions.forEach((q,i)=>{if(answers[i]===q.answer)correct++;});
+ let correct=0; questions.forEach((q,i)=>{if(answers[i]===q.answer) correct++;});
  let wrong=questions.length-correct;
  let timeSpent=Math.floor((Date.now()-startTime)/1000);
  document.getElementById('exam').classList.add('hidden');
@@ -168,11 +182,19 @@ function finishExam(){
  document.getElementById('correctCount').textContent=correct;
  document.getElementById('wrongCount').textContent=wrong;
  document.getElementById('timeSpent').textContent=timeSpent;
- let archive=JSON.parse(localStorage.getItem('archive')||"[]");
- archive.push({name:studentName,level:level,correct:correct,total:questions.length,time:timeSpent,date:new Date().toLocaleString()});
- localStorage.setItem('archive',JSON.stringify(archive));
+
+ // حفظ على Firebase
+ await addDoc(collection(db,"archive"),{
+   name:studentName,
+   level:level,
+   correct:correct,
+   total:questions.length,
+   time:timeSpent,
+   date:new Date().toLocaleString()
+ });
 }
 
+// ==== Timer ====
 function startTimer(){
  timerInterval=setInterval(()=>{
    let elapsed=Math.floor((Date.now()-startTime)/1000);
@@ -181,81 +203,43 @@ function startTimer(){
    document.getElementById('timer').textContent=`الوقت: ${min}:${sec<10?'0'+sec:sec}`;
  },1000);
 }
+
 function updateProgress(){
  let percent=Math.floor(((currentQ+1)/questions.length)*100);
  document.getElementById('progress').style.width=percent+"%";
 }
 
-// ======= المعلم =======
-function teacherLogin(){
+// ==== المعلم ====
+async function teacherLogin(){
  let name=document.getElementById('teacherName').value.trim();
  let pass=document.getElementById('teacherPass').value;
  if(name==="نيرمين" && pass==="1234"){
    document.getElementById('login').classList.add('hidden');
    document.getElementById('archive').classList.remove('hidden');
    loadArchive();
-   showModel();
- }else{document.getElementById('teacherMsg').textContent="لا يوجد وصول للأرشيف";}
+ } else document.getElementById('teacherMsg').textContent="لا يوجد وصول للأرشيف";
 }
 
-function loadArchive(){
- let archive=JSON.parse(localStorage.getItem('archive')||"[]");
+async function loadArchive(){
+ const aCol = collection(db,"archive");
+ const aSnap = await getDocs(aCol);
  let html="";
- archive.forEach(a=>{html+=`<tr><td>${a.name}</td><td>${a.level}</td><td>${a.correct}</td><td>${a.total}</td><td>${a.time}</td><td>${a.date}</td></tr>`;});
+ aSnap.forEach(doc=>{
+   let a = doc.data();
+   html+=`<tr><td>${a.name}</td><td>${a.level}</td><td>${a.correct}</td><td>${a.total}</td><td>${a.time}</td><td>${a.date}</td></tr>`;
+ });
  document.getElementById('archiveBody').innerHTML=html;
 }
-function clearArchive(){localStorage.removeItem('archive'); loadArchive();}
-function backToLogin(){document.getElementById('archive').classList.add('hidden'); document.getElementById('login').classList.remove('hidden');}
 
-function showModel(){
- let container=document.getElementById('modelContainer');
- container.innerHTML="";
- let model=models[currentModel]||[];
- if(model.length===0){container.innerHTML="<p>لا توجد أسئلة لهذا النموذج.</p>"; return;}
- let html="<table><tr><th>السؤال</th><th>المستوى</th><th>الجواب</th><th>حذف</th></tr>";
- model.forEach((q,i)=>{
-   html+=`<tr>
-     <td>${q.text}</td>
-     <td>${q.level}</td>
-     <td>${q.answer}</td>
-     <td><button onclick="deleteQuestion(${i})">🗑</button></td>
-   </tr>`;
- });
- html+="</table>";
- container.innerHTML=html;
- document.getElementById('modelSelect').value=currentModel;
-}
-function prevModel(){if(currentModel>0){currentModel--; showModel();}}
-function nextModel(){if(currentModel<models.length-1){currentModel++; showModel();}}
-
-function addTeacherQuestion(){
- let lvl=parseInt(document.getElementById('customLevel').value);
+async function addTeacherQuestion(){
  let txt=document.getElementById('customQuestion').value.trim();
  let ans=parseInt(document.getElementById('customAnswer').value);
+ let lvl=parseInt(document.getElementById('customLevel').value);
  if(!txt || isNaN(ans)){alert("ادخل السؤال والجواب"); return;}
- if(!models[currentModel]) models[currentModel]=[];
- models[currentModel].push({text:txt,answer:ans,level:lvl});
- localStorage.setItem('models',JSON.stringify(models));
+ await addDoc(collection(db,"questions"),{text:txt,answer:ans,level:lvl});
+ document.getElementById('customMsg').textContent="تم إضافة السؤال!";
  document.getElementById('customQuestion').value="";
  document.getElementById('customAnswer').value="";
- document.getElementById('customMsg').textContent="تم إضافة السؤال!";
- showModel();
-}
-function deleteQuestion(index){
- models[currentModel].splice(index,1);
- localStorage.setItem('models',JSON.stringify(models));
- showModel();
-}
-
-// ======= خيارات عشوائية =======
-function shuffleOptions(correct){
- let opts=[correct];
- while(opts.length<4){
-   let d=correct+Math.floor(Math.random()*5)-2;
-   if(d<1)d=1;if(d>99)d=99;
-   if(!opts.includes(d))opts.push(d);
- }
- return opts.sort(()=>Math.random()-0.5);
 }
 </script>
 </body>
