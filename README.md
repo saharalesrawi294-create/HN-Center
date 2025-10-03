@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>مركز الحساب الذهني</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      text-align: center;
+      direction: rtl;
+    }
+    h1, h2 {
+      color: #e20e63;
+    }
+    .hidden {
+      display: none;
+    }
+    .question {
+      margin: 20px 0;
+      font-size: 22px;
+      font-weight: bold;
+    }
+    .answers {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    .answers button {
+      background: #eacd2e;
+      border: none;
+      padding: 10px 20px;
+      font-size: 18px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .answers button:hover {
+      background: #559a3e;
+      color: #fff;
+    }
+    .admin-input {
+      margin: 10px 0;
+    }
+    input {
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .nav {
+      margin: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎓 مركز الحساب الذهني</h1>
+
+  <!-- صفحة اختيار -->
+  <div id="home">
+    <button onclick="showStudent()">دخول الطالب</button>
+    <button onclick="showTeacher()">دخول المعلم</button>
+  </div>
+
+  <!-- صفحة الطالب -->
+  <div id="studentPage" class="hidden">
+    <h2>صفحة الطالب</h2>
+    <div class="admin-input">
+      <input type="text" id="studentModelName" placeholder="اكتب اسم النموذج">
+      <input type="password" id="studentPassword" placeholder="كلمة السر">
+      <button onclick="loadQuestions()">ابدأ</button>
+    </div>
+    <div id="quiz" class="hidden">
+      <p id="questionNumber"></p>
+      <div class="question" id="questionText"></div>
+      <div class="answers" id="answersBox"></div>
+      <button onclick="nextQuestion()">السؤال التالي</button>
+    </div>
+    <div class="nav">
+      <button onclick="goHome()">🏠 رجوع للصفحة الرئيسية</button>
+    </div>
+  </div>
+
+  <!-- صفحة المعلم -->
+  <div id="teacherPage" class="hidden">
+    <h2>صفحة المعلم</h2>
+    <div class="admin-input">
+      <input type="text" id="teacherModelName" placeholder="اسم النموذج">
+      <input type="password" id="teacherPassword" placeholder="كلمة السر">
+    </div>
+    <div id="questionsContainer"></div>
+    <button onclick="addQuestion()">➕ إضافة سؤال</button>
+    <button onclick="saveModel()">💾 حفظ النموذج</button>
+    <div class="nav">
+      <button onclick="goHome()">🏠 رجوع للصفحة الرئيسية</button>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
+      authDomain: "hn-center.firebaseapp.com",
+      projectId: "hn-center",
+      storageBucket: "hn-center.firebasestorage.app",
+      messagingSenderId: "985828603143",
+      appId: "1:985828603143:web:defd2e10a864825dc401a2",
+      measurementId: "G-RTE2ZPTHM1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 🔹 تنقل بين الصفحات
+    window.showStudent = () => {
+      document.getElementById("home").classList.add("hidden");
+      document.getElementById("studentPage").classList.remove("hidden");
+    };
+    window.showTeacher = () => {
+      document.getElementById("home").classList.add("hidden");
+      document.getElementById("teacherPage").classList.remove("hidden");
+    };
+    window.goHome = () => {
+      document.getElementById("studentPage").classList.add("hidden");
+      document.getElementById("teacherPage").classList.add("hidden");
+      document.getElementById("home").classList.remove("hidden");
+    };
+
+    // 🔹 للمعلم: إضافة سؤال جديد
+    window.addQuestion = () => {
+      const container = document.getElementById("questionsContainer");
+      const div = document.createElement("div");
+      div.className = "admin-input";
+      div.innerHTML = `
+        <input type="text" placeholder="السؤال">
+        <input type="text" placeholder="الجواب الصحيح">
+        <input type="text" placeholder="خيار 1">
+        <input type="text" placeholder="خيار 2">
+        <input type="text" placeholder="خيار 3">
+        <button onclick="this.parentElement.remove()">🗑 مسح</button>
+      `;
+      container.appendChild(div);
+    };
+
+    // 🔹 للمعلم: حفظ النموذج
+    window.saveModel = async () => {
+      const modelName = document.getElementById("teacherModelName").value;
+      const password = document.getElementById("teacherPassword").value;
+      const container = document.getElementById("questionsContainer").children;
+
+      let questions = [];
+      for (let div of container) {
+        const inputs = div.querySelectorAll("input");
+        if (inputs[0].value && inputs[1].value) {
+          questions.push({
+            q: inputs[0].value,
+            correct: inputs[1].value,
+            options: [inputs[1].value, inputs[2].value, inputs[3].value, inputs[4].value].filter(x => x)
+          });
+        }
+      }
+
+      await setDoc(doc(db, "models", modelName), {
+        password,
+        questions
+      });
+
+      alert("✅ تم حفظ النموذج بنجاح!");
+    };
+
+    // 🔹 للطالب: تحميل الأسئلة
+    let currentQuestion = 0;
+    let loadedQuestions = [];
+
+    window.loadQuestions = async () => {
+      const modelName = document.getElementById("studentModelName").value;
+      const password = document.getElementById("studentPassword").value;
+
+      const docRef = doc(db, "models", modelName);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        alert("❌ النموذج غير موجود");
+        return;
+      }
+
+      const data = docSnap.data();
+      if (data.password !== password) {
+        alert("❌ كلمة السر خاطئة");
+        return;
+      }
+
+      loadedQuestions = data.questions;
+      currentQuestion = 0;
+      document.getElementById("quiz").classList.remove("hidden");
+      showQuestion();
+    };
+
+    function showQuestion() {
+      if (currentQuestion >= loadedQuestions.length) {
+        document.getElementById("quiz").innerHTML = "<h2>🎉 انتهى الاختبار!</h2>";
+        return;
+      }
+
+      const q = loadedQuestions[currentQuestion];
+      document.getElementById("questionNumber").innerText = `السؤال ${currentQuestion + 1}`;
+      document.getElementById("questionText").innerText = q.q;
+
+      const answersBox = document.getElementById("answersBox");
+      answersBox.innerHTML = "";
+      q.options.forEach(option => {
+        const btn = document.createElement("button");
+        btn.innerText = option;
+        btn.onclick = () => {
+          if (option == q.correct) {
+            btn.style.background = "#559a3e";
+          } else {
+            btn.style.background = "#e20e63";
+          }
+        };
+        answersBox.appendChild(btn);
+      });
+    }
+
+    window.nextQuestion = () => {
+      currentQuestion++;
+      showQuestion();
+    };
+  </script>
+</body>
+</html>
