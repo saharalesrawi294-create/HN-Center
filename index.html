@@ -235,17 +235,17 @@ th{background:#e20e63;color:white;}
 <script>
 // ======== Firebase config ========
 const firebaseConfig = {
-  apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
-  authDomain: "hn-center.firebaseapp.com",
-  projectId: "hn-center",
-  storageBucket: "hn-center.firebasestorage.app",
-  messagingSenderId: "985828603143",
-  appId: "1:985828603143:web:96066b81ab64f5f3c401a2",
-  measurementId: "G-JLP8YZTRGE"
+  apiKey: "AIzaSyDgsivtm87sf0E2OhVazHi-DVZUbkMlxmo",
+  authDomain: "hn-center-c7dac.firebaseapp.com",
+  projectId: "hn-center-c7dac",
+  storageBucket: "hn-center-c7dac.firebasestorage.app",
+  messagingSenderId: "368045678275",
+  appId: "1:368045678275:web:770d53ec2200a014cb8c76",
+  measurementId: "G-MZJX960SXY"
 };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
 // ======== local models fallback ========
 let models=[[],[],[]];
@@ -450,4 +450,5 @@ function nextModel(){ if(currentModel<models.length-1){currentModel++; showModel
 </script>
 </body>
 </html>
+
 
