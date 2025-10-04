@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HN-Center Mental Math</title>
+<style>
+/* --- حافظت على كل التنسيق الأصلي تماماً --- */
+body{
+  font-family:Arial, sans-serif;
+  text-align:center;
+  background:#fff;
+  color:#000;
+  direction:rtl;
+  margin:0;
+  padding:0;
+}
+.container{
+  max-width:750px;
+  margin:20px auto;
+  background:#fff;
+  padding:20px;
+  border-radius:15px;
+  box-shadow:0 0 15px rgba(0,0,0,0.2);
+}
+input,select,button{
+  padding:12px;
+  margin:8px;
+  border-radius:10px;
+  border:1px solid #0297b9;
+  font-size:16px;
+  width:80%;
+}
+button{
+  width:auto;
+  background:#e20e63;
+  color:white;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+  transition:0.3s;
+}
+button:hover{
+  background:#559a3e;
+  transform:scale(1.05);
+}
+.question-container{
+  background: linear-gradient(135deg, #eacd2e33, #e20e6333);
+  border-radius:12px;
+  padding:15px;
+  margin:15px 0;
+  position:relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.question-icon{
+  position:absolute;
+  top:10px;
+  left:10px;
+  width:30px;
+  height:30px;
+}
+.question{
+  font-size:24px;
+  margin:0;
+  color:#0297b9;
+}
+.options{
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:nowrap;
+  gap:10px;
+  margin-top:15px;
+}
+.options button{
+  flex:1;
+  margin:0 5px;
+  padding:12px;
+  border-radius:10px;
+  font-size:18px;
+  background:#eacd2e;
+  color:#000;
+  border:none;
+  transition:0.3s;
+}
+.options button.correct{background:#559a3e;color:white;}
+.options button.incorrect{background:#e20e63;color:white;}
+.options button:hover{transform:scale(1.05);}
+.hidden{display:none;}
+table{
+  border-collapse:collapse;
+  width:100%;
+  margin-top:10px;
+}
+th,td{
+  border:1px solid #0297b9;
+  padding:10px;
+  text-align:center;
+  background:#eacd2e;
+  color:#000;
+  font-weight:bold;
+}
+th{background:#e20e63;color:white;}
+.nav-btns button{
+  width:120px;
+  margin:5px;
+}
+#progressBar{
+  width:100%;
+  background:#eacd2e;
+  border-radius:10px;
+  overflow:hidden;
+  height:20px;
+  margin-top:10px;
+}
+#progress{
+  height:100%;
+  width:0%;
+  background:#0297b9;
+  transition:0.3s;
+  border-radius:10px;
+}
+#timer{
+  font-size:18px;
+  font-weight:bold;
+  margin-top:10px;
+  color:#e20e63;
+}
+
+/* overlay sign-in prompt */
+#authOverlay{
+  position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center; z-index:9999;
+}
+#authBox{ background:white; padding:20px; border-radius:12px; max-width:420px; width:95%; text-align:center; }
+#authBox h3{ margin-top:0; }
+.google-btn{ background:#4285F4; color:white; border:none; padding:12px 16px; border-radius:8px; cursor:pointer; font-weight:bold; }
+.small-muted{ color:#666; font-size:13px; margin-top:6px;}
+</style>
+</head>
+<body>
+
+<!-- AUTH OVERLAY -->
+<div id="authOverlay">
+  <div id="authBox">
+    <h3>أهلاً! رجاءً سجّل دخولك بحساب Google للمتابعة</h3>
+    <p class="small-muted">هذا يضمن أن نتائج كل طالب محفوظة بحسابه وستعود له في أي وقت.</p>
+    <button id="googleSignIn" class="google-btn">سجل دخول بحساب Google</button>
+    <p class="small-muted">(لو أنت المدرّس: يمكنك تسجيل الدخول هنا بنفس حسابك أو استخدم قسم "دخول المعلم" بعد إغلاق هذه النافذة)</p>
+  </div>
+</div>
+
+<!-- الواجهة الأصلية -->
+<div class="container" id="login">
+<h2>تسجيل دخول الطالب</h2>
+<input type="text" id="studentName" placeholder="اسم الطالب"><br>
+<select id="level">
+<option value="0">المستوى 0</option>
+<option value="2">المستوى 2</option>
+</select><br>
+<button onclick="startExam()">دخول</button>
+<hr>
+<h3>تسجيل دخول المعلم</h3>
+<input type="text" id="teacherName" placeholder="اسم المعلم"><br>
+<input type="password" id="teacherPass" placeholder="كلمة المرور"><br>
+<button onclick="teacherLogin()">دخول المعلم</button>
+<p id="teacherMsg"></p>
+</div>
+
+<!-- صفحة الامتحان -->
+<div class="container hidden" id="exam">
+<h2 id="examTitle"></h2>
+<p id="timer">الوقت: 0:00</p>
+<p>السؤال <span id="qNum"></span> / <span id="totalQ">0</span></p>
+<div class="question-container">
+  <img src="https://img.icons8.com/color/48/000000/book.png" class="question-icon">
+  <div class="question" id="questionText"></div>
+</div>
+<div class="options" id="options"></div>
+<div id="progressBar"><div id="progress"></div></div>
+<div class="nav-btns">
+<button onclick="prevQ()">السابق</button>
+<button onclick="nextQ()">التالي</button>
+</div>
+</div>
+
+<!-- صفحة النتائج -->
+<div class="container hidden" id="results">
+<h2>النتيجة</h2>
+<p>إجابات صحيحة: <span id="correctCount"></span></p>
+<p>إجابات خاطئة: <span id="wrongCount"></span></p>
+<p>الوقت المستغرق: <span id="timeSpent"></span> ثانية</p>
+<button onclick="location.reload()">إنهاء</button>
+</div>
+
+<!-- صفحة المعلم -->
+<div class="container hidden" id="archive">
+<h2>أرشيف المعلم</h2>
+<table>
+<thead><tr><th>اسم الطالب</th><th>المستوى</th><th>صح</th><th>مجموع</th><th>وقت</th><th>تاريخ</th></tr></thead>
+<tbody id="archiveBody"></tbody>
+</table>
+<div class="nav-btns">
+<button onclick="clearArchive()">مسح الأرشيف</button>
+<button onclick="backToLogin()">العودة للرئيسية</button>
+</div>
+
+<hr>
+<h3>نماذج الأسئلة</h3>
+<select id="modelSelect" onchange="showModel()">
+<option value="0">النموذج 1</option>
+<option value="1">النموذج 2</option>
+<option value="2">النموذج 3</option>
+</select>
+<div id="modelContainer"></div>
+<div class="nav-btns">
+<button onclick="prevModel()">النموذج السابق</button>
+<button onclick="nextModel()">النموذج التالي</button>
+</div>
+
+<h3>إضافة سؤال جديد للنموذج الحالي</h3>
+<select id="customLevel">
+<option value="0">المستوى 0</option>
+<option value="2">المستوى 2</option>
+</select><br>
+<input type="text" id="customQuestion" placeholder="صيغة السؤال مثلا: 2 + 3"><br>
+<input type="number" id="customAnswer" placeholder="الجواب الصحيح"><br>
+<button onclick="addTeacherQuestion()">أضف السؤال</button>
+<p id="customMsg"></p>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+<script>
+// ======== Firebase config ========
+const firebaseConfig = {
+  apiKey: "AIzaSyDgsivtm87sf0E2OhVazHi-DVZUbkMlxmo",
+  authDomain: "hn-center-c7dac.firebaseapp.com",
+  projectId: "hn-center-c7dac",
+  storageBucket: "hn-center-c7dac.firebasestorage.app",
+  messagingSenderId: "368045678275",
+  appId: "1:368045678275:web:770d53ec2200a014cb8c76",
+  measurementId: "G-MZJX960SXY"
+};
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+// ======== local models fallback ========
+let models=[[],[],[]];
+if(localStorage.getItem('models')) models=JSON.parse(localStorage.getItem('models'));
+
+// ======== vars ========
+let studentName="", level=0, questions=[], answers=[], currentQ=0, startTime, timerInterval;
+let currentModel=0;
+let sessionDocId = null; 
+let currentUser = null;
+
+// ======== Auth overlay & sign-in ========
+const authOverlay = document.getElementById('authOverlay');
+document.getElementById('googleSignIn').addEventListener('click', ()=> {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err=>alert('خطأ بتسجيل الدخول: '+err.message));
+});
+
+// state change
+auth.onAuthStateChanged(user => {
+  currentUser = user;
+  if(user){
+    authOverlay.style.display = 'none';
+    const nameInput = document.getElementById('studentName');
+    if(!nameInput.value) nameInput.value = user.displayName || user.email.split('@')[0];
+    loadModelsFromFirestore();
+  } else { authOverlay.style.display = 'flex'; }
+});
+
+// ========== load models ==========
+async function loadModelsFromFirestore(){
+  try{
+    const docRef = db.collection('config').doc('models');
+    const doc = await docRef.get();
+    if(doc.exists){
+      const data = doc.data();
+      if(data && data.models && Array.isArray(data.models)) {
+        models = data.models;
+        localStorage.setItem('models', JSON.stringify(models));
+      }
+    } else {
+      await docRef.set({ models: models });
+    }
+  }catch(e){ console.error('خطأ بجلب النماذج:', e); }
+}
+
+// ======== START EXAM ========
+function startExam(){
+ studentName = document.getElementById('studentName').value.trim();
+ level = document.getElementById('level').value;
+ if(!currentUser){ alert('يجب تسجيل الدخول أولاً بحساب Google'); return; }
+ if(studentName===""){ alert("ادخل اسم الطالب"); return; }
+ loadExamQuestions();
+ if(questions.length===0){ alert("لا توجد أسئلة لهذا المستوى، المعلم يجب أن يضيف أسئلة."); return; }
+ document.getElementById('login').classList.add('hidden');
+ document.getElementById('exam').classList.remove('hidden');
+ document.getElementById('examTitle').innerText = "اختبار مستوى " + level;
+ document.getElementById('totalQ').innerText = questions.length;
+ currentQ=0; answers=[]; questions.forEach(q=>answers.push(null));
+ startTimer();
+ showQuestion();
+}
+
+// ======== LOAD QUESTIONS ========
+function loadExamQuestions(){
+ questions = models[level] || [];
+}
+
+// ======== TIMER ========
+function startTimer(){
+ startTime = Date.now();
+ timerInterval = setInterval(()=>{
+  const sec = Math.floor((Date.now()-startTime)/1000);
+  document.getElementById('timer').innerText = "الوقت: "+sec+" ثانية";
+ },1000);
+}
+
+// ======== SHOW QUESTION ========
+function showQuestion(){
+ const q=questions[currentQ];
+ document.getElementById('qNum').innerText=currentQ+1;
+ document.getElementById('questionText').innerText=q.text;
+ const optsDiv = document.getElementById('options');
+ optsDiv.innerHTML="";
+ q.options.forEach(opt=>{
+   const btn = document.createElement('button');
+   btn.innerText=opt;
+   btn.onclick=()=>selectAnswer(opt,btn);
+   optsDiv.appendChild(btn);
+ });
+ updateProgress();
+}
+
+// ======== SELECT ANSWER ========
+function selectAnswer(val, btn){
+ answers[currentQ]=val;
+ let buttons=document.querySelectorAll('.options button');
+ buttons.forEach(b=>b.classList.remove('correct','incorrect'));
+ if(val===questions[currentQ].answer){ btn.classList.add('correct'); } else { btn.classList.add('incorrect'); }
+ saveAnswerOnline(currentQ); // حفظ فوراً على Firebase
+}
+
+// ======== NAVIGATION ========
+function nextQ(){ if(currentQ<questions.length-1){ currentQ++; showQuestion(); } else finishExam(); }
+function prevQ(){ if(currentQ>0){ currentQ--; showQuestion(); } }
+
+// ======== PROGRESS BAR ========
+function updateProgress(){
+ const perc = ((currentQ+1)/questions.length)*100;
+ document.getElementById('progress').style.width = perc+"%";
+}
+
+// ======== FINISH EXAM ========
+function finishExam(){
+ clearInterval(timerInterval);
+ let correct=0, wrong=0;
+ answers.forEach((a,i)=>{ if(a===questions[i].answer) correct++; else wrong++; });
+ document.getElementById('correctCount').innerText=correct;
+ document.getElementById('wrongCount').innerText=wrong;
+ document.getElementById('timeSpent').innerText=Math.floor((Date.now()-startTime)/1000);
+ document.getElementById('exam').classList.add('hidden');
+ document.getElementById('results').classList.remove('hidden');
+ saveExamResult(correct, wrong, Math.floor((Date.now()-startTime)/1000));
+}
+
+// ======== SAVE ANSWER ONLINE ========
+async function saveAnswerOnline(index){
+ if(!currentUser || !questions[index]) return;
+ const q = questions[index];
+ const ans = answers[index];
+ const data = {
+   question:q.text,
+   given:ans,
+   correctAnswer:q.answer,
+   ok: ans===q.answer,
+   timestamp: firebase.firestore.FieldValue.serverTimestamp()
+ };
+ try{
+   if(sessionDocId){
+     await db.collection('sessions').doc(sessionDocId).update({ attempts: firebase.firestore.FieldValue.arrayUnion(data) });
+   } else {
+     const payload = { uid: currentUser.uid, email:currentUser.email||null, name:studentName, level:level, attempts:[data], timestamp:firebase.firestore.FieldValue.serverTimestamp() };
+     const res = await db.collection('sessions').add(payload);
+     sessionDocId=res.id;
+   }
+ }catch(e){ console.error('Firebase save error:',e); }
+}
+
+// ======== SAVE EXAM RESULT ========
+async function saveExamResult(correct, wrong, time){
+ if(!currentUser) return;
+ const payload = { uid:currentUser.uid, name:studentName, level, correct, wrong, time, timestamp:firebase.firestore.FieldValue.serverTimestamp() };
+ try{ await db.collection('results').add(payload); }catch(e){ console.error('Firebase save result error:',e); }
+}
+
+// ======== TEACHER LOGIN ========
+function teacherLogin(){
+ const tName=document.getElementById('teacherName').value.trim();
+ const tPass=document.getElementById('teacherPass').value;
+ if(tName==="teacher" && tPass==="123"){ document.getElementById('login').classList.add('hidden'); document.getElementById('archive').classList.remove('hidden'); loadArchive(); } else { document.getElementById('teacherMsg').innerText="خطأ بالبيانات"; }
+}
+
+// ======== LOAD ARCHIVE ========
+async function loadArchive(){
+ try{
+   const snapshot = await db.collection('sessions').get();
+   const body=document.getElementById('archiveBody');
+   body.innerHTML="";
+   snapshot.forEach(doc=>{
+     const data=doc.data();
+     const total=data.attempts.length;
+     const correct=data.attempts.filter(a=>a.ok).length;
+     const date=data.timestamp?.toDate()?.toLocaleString() || "-";
+     body.innerHTML+="<tr><td>"+data.name+"</td><td>"+data.level+"</td><td>"+correct+"</td><td>"+total+"</td><td>-</td><td>"+date+"</td></tr>";
+   });
+ }catch(e){ console.error(e); }
+}
+
+// ======== CLEAR ARCHIVE ========
+function clearArchive(){ if(confirm('مسح كل الأرشيف؟')){ db.collection('sessions').get().then(snap=>snap.forEach(doc=>doc.ref.delete())); document.getElementById('archiveBody').innerHTML=""; } }
+function backToLogin(){ document.getElementById('archive').classList.add('hidden'); document.getElementById('login').classList.remove('hidden'); }
+
+// ======== TEACHER ADD QUESTION ========
+function addTeacherQuestion(){
+ const q=document.getElementById('customQuestion').value.trim();
+ const ans=+document.getElementById('customAnswer').value;
+ const l=document.getElementById('customLevel').value;
+ if(!q || isNaN(ans)){ document.getElementById('customMsg').innerText="اكمل جميع الحقول"; return; }
+ const newQ={ text:q, answer:ans, options:[ans, ans+1, ans+2, ans+3] };
+ if(!models[l]) models[l]=[];
+ models[l].push(newQ);
+ localStorage.setItem('models',JSON.stringify(models));
+ document.getElementById('customMsg').innerText="تم الإضافة";
+ db.collection('config').doc('models').set({ models:models }); 
+}
+
+// ======== MODEL DISPLAY FOR TEACHER ========
+function showModel(){ document.getElementById('modelContainer').innerText=JSON.stringify(models[currentModel]||[]);}
+function prevModel(){ if(currentModel>0){currentModel--; showModel();} }
+function nextModel(){ if(currentModel<models.length-1){currentModel++; showModel();} }
+
+</script>
+</body>
+</html>
+
+
+
