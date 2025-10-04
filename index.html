@@ -138,7 +138,7 @@ th{background:#e20e63;color:white;}
 </head>
 <body>
 
-<!-- AUTH OVERLAY: يظهر أول ما يدخل الموقع ويجبر المستخدم يسجل بحساب Google -->
+<!-- AUTH OVERLAY -->
 <div id="authOverlay">
   <div id="authBox">
     <h3>أهلاً! رجاءً سجّل دخولك بحساب Google للمتابعة</h3>
@@ -148,7 +148,7 @@ th{background:#e20e63;color:white;}
   </div>
 </div>
 
-<!-- الواجهة الأصلية (ما غيرت فيها شيء) -->
+<!-- الواجهة الأصلية -->
 <div class="container" id="login">
 <h2>تسجيل دخول الطالب</h2>
 <input type="text" id="studentName" placeholder="اسم الطالب"><br>
@@ -165,7 +165,7 @@ th{background:#e20e63;color:white;}
 <p id="teacherMsg"></p>
 </div>
 
-<!-- صفحة الامتحان للطالب -->
+<!-- صفحة الامتحان -->
 <div class="container hidden" id="exam">
 <h2 id="examTitle"></h2>
 <p id="timer">الوقت: 0:00</p>
@@ -227,13 +227,13 @@ th{background:#e20e63;color:white;}
 <p id="customMsg"></p>
 </div>
 
-<!-- Firebase SDKs (compat لتسهيل الدمج مع الكود) -->
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
 <script>
-// ========== Firebase config (من عندك) ==========
+// ======== Firebase config ========
 const firebaseConfig = {
   apiKey: "AIzaSyB37PGrijgQNNSeVXas_2iWVHf-0r8uUrs",
   authDomain: "hn-center-2016.firebaseapp.com",
@@ -243,19 +243,18 @@ const firebaseConfig = {
   appId: "1:850632936429:web:011d212050a5cf6cc9b5e4",
   measurementId: "G-RBWSZ2N83K"
 };
-// ========== init ==========
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// ======== local models fallback (حافظة التنسيق الأصلي) ========
+// ======== local models fallback ========
 let models=[[],[],[]];
 if(localStorage.getItem('models')) models=JSON.parse(localStorage.getItem('models'));
 
 // ======== vars ========
 let studentName="", level=0, questions=[], answers=[], currentQ=0, startTime, timerInterval;
 let currentModel=0;
-let sessionDocId = null; // id الجلسة في Firestore إن ثبتت
+let sessionDocId = null; 
 let currentUser = null;
 
 // ======== Auth overlay & sign-in ========
@@ -269,20 +268,14 @@ document.getElementById('googleSignIn').addEventListener('click', ()=> {
 auth.onAuthStateChanged(user => {
   currentUser = user;
   if(user){
-    // أخفي الغلاف
     authOverlay.style.display = 'none';
-    // عبيّل اسم الطالب تلقائياً لو فاضي
     const nameInput = document.getElementById('studentName');
     if(!nameInput.value) nameInput.value = user.displayName || user.email.split('@')[0];
-    // جلب النماذج من Firestore
     loadModelsFromFirestore();
-  } else {
-    // أظهر الغلاف
-    authOverlay.style.display = 'flex';
-  }
+  } else { authOverlay.style.display = 'flex'; }
 });
 
-// ========== load models from Firestore (or create default if missing) ==========
+// ========== load models ==========
 async function loadModelsFromFirestore(){
   try{
     const docRef = db.collection('config').doc('models');
@@ -291,246 +284,169 @@ async function loadModelsFromFirestore(){
       const data = doc.data();
       if(data && data.models && Array.isArray(data.models)) {
         models = data.models;
-        localStorage.setItem('models', JSON.stringify(models)); // cache
+        localStorage.setItem('models', JSON.stringify(models));
       }
     } else {
-      // إذا ما في models بالمشروع، أنشئ الدكومنت من القيم المحلية (لو في)
       await docRef.set({ models: models });
     }
-  }catch(e){
-    console.error('خطأ بجلب النماذج:', e);
-  }
+  }catch(e){ console.error('خطأ بجلب النماذج:', e); }
 }
 
-// ========== الطالب: بداية الامتحان ==========
+// ======== START EXAM ========
 function startExam(){
  studentName = document.getElementById('studentName').value.trim();
  level = document.getElementById('level').value;
- if(!currentUser){
-   alert('يجب تسجيل الدخول أولاً بحساب Google');
-   return;
- }
+ if(!currentUser){ alert('يجب تسجيل الدخول أولاً بحساب Google'); return; }
  if(studentName===""){ alert("ادخل اسم الطالب"); return; }
  loadExamQuestions();
  if(questions.length===0){ alert("لا توجد أسئلة لهذا المستوى، المعلم يجب أن يضيف أسئلة."); return; }
  document.getElementById('login').classList.add('hidden');
  document.getElementById('exam').classList.remove('hidden');
- document.getElementById('examTitle').textContent = "امتحان المستوى " + level;
- document.getElementById('totalQ').textContent = questions.length;
- startTime = Date.now();
+ document.getElementById('examTitle').innerText = "اختبار مستوى " + level;
+ document.getElementById('totalQ').innerText = questions.length;
+ currentQ=0; answers=[]; questions.forEach(q=>answers.push(null));
  startTimer();
- showQ();
- // حاول تحميل جلسة سابقة للمستخدم (لو حابب) - نتركه افتراضي
+ showQuestion();
 }
 
-// ========== تجهيز الأسئلة للطالب ==========
+// ======== LOAD QUESTIONS ========
 function loadExamQuestions(){
- questions = [];
- answers = [];
- // احصل على كل الأسئلة من النماذج المحفوظة
- let allQs = [];
- models.forEach(m => { if(Array.isArray(m)) allQs = allQs.concat(m); });
- let lvlQs = allQs.filter(q => String(q.level) === String(level));
- // اخلط وامثل
- questions = shuffleArray(lvlQs);
- answers = new Array(questions.length).fill(null);
+ questions = models[level] || [];
 }
 
-function shuffleArray(array){ return array.sort(()=>Math.random()-0.5); }
+// ======== TIMER ========
+function startTimer(){
+ startTime = Date.now();
+ timerInterval = setInterval(()=>{
+  const sec = Math.floor((Date.now()-startTime)/1000);
+  document.getElementById('timer').innerText = "الوقت: "+sec+" ثانية";
+ },1000);
+}
 
-// ========== عرض سؤال ========
-function showQ(){
- let q = questions[currentQ];
- document.getElementById('qNum').textContent = currentQ+1;
- document.getElementById('questionText').textContent = q.text;
- // توليد الخيارات إن لم توجد
- q.options = q.options || shuffleOptions(q.answer);
- let opsHTML = "";
- q.options.forEach(o => {
-   let cls = "";
-   if(answers[currentQ] === o) cls = "correct";
-   opsHTML += `<button onclick="selectAnswer(${o}, this)" class="${cls}">${o}</button>`;
+// ======== SHOW QUESTION ========
+function showQuestion(){
+ const q=questions[currentQ];
+ document.getElementById('qNum').innerText=currentQ+1;
+ document.getElementById('questionText').innerText=q.text;
+ const optsDiv = document.getElementById('options');
+ optsDiv.innerHTML="";
+ q.options.forEach(opt=>{
+   const btn = document.createElement('button');
+   btn.innerText=opt;
+   btn.onclick=()=>selectAnswer(opt,btn);
+   optsDiv.appendChild(btn);
  });
- document.getElementById('options').innerHTML = opsHTML;
  updateProgress();
 }
 
-// عندما يختار الطالب إجابة
+// ======== SELECT ANSWER ========
 function selectAnswer(val, btn){
- answers[currentQ] = val;
- let buttons = document.querySelectorAll('.options button');
- buttons.forEach(b => b.classList.remove('correct','incorrect'));
- if(val === questions[currentQ].answer){ btn.classList.add('correct'); } else { btn.classList.add('incorrect'); }
+ answers[currentQ]=val;
+ let buttons=document.querySelectorAll('.options button');
+ buttons.forEach(b=>b.classList.remove('correct','incorrect'));
+ if(val===questions[currentQ].answer){ btn.classList.add('correct'); } else { btn.classList.add('incorrect'); }
+ saveAnswerOnline(currentQ); // حفظ فوراً على Firebase
 }
 
-// تنقل بين الأسئلة
-function prevQ(){ if(currentQ>0){ currentQ--; showQ(); } }
-function nextQ(){ if(currentQ<questions.length-1){ currentQ++; showQ(); } else { finishExam(); } }
+// ======== NAVIGATION ========
+function nextQ(){ if(currentQ<questions.length-1){ currentQ++; showQuestion(); } else finishExam(); }
+function prevQ(){ if(currentQ>0){ currentQ--; showQuestion(); } }
 
-// ========== إنهاء الامتحان وحفظ النتيجة على Firestore ==========
-async function finishExam(){
+// ======== PROGRESS BAR ========
+function updateProgress(){
+ const perc = ((currentQ+1)/questions.length)*100;
+ document.getElementById('progress').style.width = perc+"%";
+}
+
+// ======== FINISH EXAM ========
+function finishExam(){
  clearInterval(timerInterval);
- let correct = 0;
- questions.forEach((q,i)=>{ if(answers[i] === q.answer) correct++; });
- let wrong = questions.length - correct;
- let timeSpent = Math.floor((Date.now() - startTime) / 1000);
-
- // إظهار نتائج محلياً
+ let correct=0, wrong=0;
+ answers.forEach((a,i)=>{ if(a===questions[i].answer) correct++; else wrong++; });
+ document.getElementById('correctCount').innerText=correct;
+ document.getElementById('wrongCount').innerText=wrong;
+ document.getElementById('timeSpent').innerText=Math.floor((Date.now()-startTime)/1000);
  document.getElementById('exam').classList.add('hidden');
  document.getElementById('results').classList.remove('hidden');
- document.getElementById('correctCount').textContent = correct;
- document.getElementById('wrongCount').textContent = wrong;
- document.getElementById('timeSpent').textContent = timeSpent;
+ saveExamResult(correct, wrong, Math.floor((Date.now()-startTime)/1000));
+}
 
- // تجهيز بيانات الحفظ
- const payload = {
-   uid: currentUser.uid,
-   email: currentUser.email || null,
-   name: studentName,
-   level: level,
-   correct: correct,
-   total: questions.length,
-   timeSpent: timeSpent,
-   attempts: questions.map((q,i) => ({
-     question: q.text,
-     given: answers[i],
-     correctAnswer: q.answer,
-     ok: answers[i] === q.answer
-   })),
+// ======== SAVE ANSWER ONLINE ========
+async function saveAnswerOnline(index){
+ if(!currentUser || !questions[index]) return;
+ const q = questions[index];
+ const ans = answers[index];
+ const data = {
+   question:q.text,
+   given:ans,
+   correctAnswer:q.answer,
+   ok: ans===q.answer,
    timestamp: firebase.firestore.FieldValue.serverTimestamp()
  };
-
- // حفظ الجلسة في مجموعة sessions
- try {
-   const res = await db.collection('sessions').add(payload);
-   sessionDocId = res.id;
-   // أيضاً خزن مرجع للطالب (optional) في doc users/{uid}
-   await db.collection('users').doc(currentUser.uid).set({
-     name: studentName,
-     email: currentUser.email || null,
-     lastSession: firebase.firestore.FieldValue.serverTimestamp()
-   }, { merge: true });
- } catch(e){
-   console.error('خطأ بالحفظ في Firestore:', e);
-   // احتياط: خزن محلياً لو فشل
-   let archive = JSON.parse(localStorage.getItem('archive') || "[]");
-   archive.push({ name: studentName, level: level, correct: correct, total: questions.length, time: timeSpent, date: new Date().toLocaleString() });
-   localStorage.setItem('archive', JSON.stringify(archive));
- }
+ try{
+   if(sessionDocId){
+     await db.collection('sessions').doc(sessionDocId).update({ attempts: firebase.firestore.FieldValue.arrayUnion(data) });
+   } else {
+     const payload = { uid: currentUser.uid, email:currentUser.email||null, name:studentName, level:level, attempts:[data], timestamp:firebase.firestore.FieldValue.serverTimestamp() };
+     const res = await db.collection('sessions').add(payload);
+     sessionDocId=res.id;
+   }
+ }catch(e){ console.error('Firebase save error:',e); }
 }
 
-// ========== Timer & Progress ==========
-function startTimer(){
- timerInterval = setInterval(()=>{
-   let elapsed = Math.floor((Date.now() - startTime) / 1000);
-   let min = Math.floor(elapsed/60);
-   let sec = elapsed%60;
-   document.getElementById('timer').textContent = `الوقت: ${min}:${sec < 10 ? '0'+sec : sec}`;
- },1000);
-}
-function updateProgress(){
- let percent = Math.floor(((currentQ+1)/questions.length)*100);
- document.getElementById('progress').style.width = percent + "%";
+// ======== SAVE EXAM RESULT ========
+async function saveExamResult(correct, wrong, time){
+ if(!currentUser) return;
+ const payload = { uid:currentUser.uid, name:studentName, level, correct, wrong, time, timestamp:firebase.firestore.FieldValue.serverTimestamp() };
+ try{ await db.collection('results').add(payload); }catch(e){ console.error('Firebase save result error:',e); }
 }
 
-// ========== المعلم: واجهة الأرشيف (تق Reads من Firestore) ==========
-async function teacherLogin(){
- let name = document.getElementById('teacherName').value.trim();
- let pass = document.getElementById('teacherPass').value;
- if(name==="نيرمين" && pass==="1234"){
-   document.getElementById('login').classList.add('hidden');
-   document.getElementById('archive').classList.remove('hidden');
-   await loadArchive(); // عرض من Firestore
-   showModel();
- } else {
-   document.getElementById('teacherMsg').textContent = "لا يوجد وصول للأرشيف";
- }
+// ======== TEACHER LOGIN ========
+function teacherLogin(){
+ const tName=document.getElementById('teacherName').value.trim();
+ const tPass=document.getElementById('teacherPass').value;
+ if(tName==="teacher" && tPass==="123"){ document.getElementById('login').classList.add('hidden'); document.getElementById('archive').classList.remove('hidden'); loadArchive(); } else { document.getElementById('teacherMsg').innerText="خطأ بالبيانات"; }
 }
 
+// ======== LOAD ARCHIVE ========
 async function loadArchive(){
-  // جلب آخر 200 جلسة
-  try{
-    const snap = await db.collection('sessions').orderBy('timestamp','desc').limit(200).get();
-    const rows = [];
-    snap.forEach(doc => {
-      const d = doc.data();
-      const date = d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleString() : (d.date || '');
-      rows.push(`<tr><td>${escapeHtml(d.name||'مجهول')}</td><td>${escapeHtml(d.level||'')}</td><td>${d.correct}</td><td>${d.total}</td><td>${d.timeSpent}</td><td>${date}</td></tr>`);
-    });
-    document.getElementById('archiveBody').innerHTML = rows.join('') || '<tr><td colspan="6" class="small-muted">لا توجد سجلات</td></tr>';
-  }catch(e){
-    console.error('خطأ بتحميل الأرشيف:', e);
-    // fallback محلي
-    let archive = JSON.parse(localStorage.getItem('archive')||"[]");
-    let html="";
-    archive.forEach(a=>{ html+=`<tr><td>${a.name}</td><td>${a.level}</td><td>${a.correct}</td><td>${a.total}</td><td>${a.time}</td><td>${a.date}</td></tr>`; });
-    document.getElementById('archiveBody').innerHTML = html || '<tr><td colspan="6">لا توجد سجلات</td></tr>';
-  }
+ try{
+   const snapshot = await db.collection('sessions').get();
+   const body=document.getElementById('archiveBody');
+   body.innerHTML="";
+   snapshot.forEach(doc=>{
+     const data=doc.data();
+     const total=data.attempts.length;
+     const correct=data.attempts.filter(a=>a.ok).length;
+     const date=data.timestamp?.toDate()?.toLocaleString() || "-";
+     body.innerHTML+="<tr><td>"+data.name+"</td><td>"+data.level+"</td><td>"+correct+"</td><td>"+total+"</td><td>-</td><td>"+date+"</td></tr>";
+   });
+ }catch(e){ console.error(e); }
 }
 
-function clearArchive(){
-  // يمسح المحلي فقط؛ لحذف Firestore يتطلب صلاحيات إضافية — ننفّذ حدّف لجميع المستندات (حذر!)
-  if(!confirm('هل تريد مسح السجلات المحلية فقط؟ لحذف من Firestore يلزم صلاحية إضافية.')) return;
-  localStorage.removeItem('archive');
-  loadArchive();
-}
+// ======== CLEAR ARCHIVE ========
+function clearArchive(){ if(confirm('مسح كل الأرشيف؟')){ db.collection('sessions').get().then(snap=>snap.forEach(doc=>doc.ref.delete())); document.getElementById('archiveBody').innerHTML=""; } }
 function backToLogin(){ document.getElementById('archive').classList.add('hidden'); document.getElementById('login').classList.remove('hidden'); }
 
-// ========== نماذج المعلم (load/save إلى Firestore) ==========
-function showModel(){
- let container = document.getElementById('modelContainer');
- container.innerHTML = "";
- let model = models[currentModel] || [];
- if(model.length===0){ container.innerHTML = "<p>لا توجد أسئلة لهذا النموذج.</p>"; return; }
- let html = "<table><tr><th>السؤال</th><th>المستوى</th><th>الجواب</th></tr>";
- model.forEach((q,i)=>{ html += `<tr><td>${escapeHtml(q.text)}</td><td>${escapeHtml(q.level)}</td><td>${escapeHtml(q.answer)}</td></tr>`; });
- html += "</table>";
- container.innerHTML = html;
- document.getElementById('modelSelect').value = currentModel;
+// ======== TEACHER ADD QUESTION ========
+function addTeacherQuestion(){
+ const q=document.getElementById('customQuestion').value.trim();
+ const ans=+document.getElementById('customAnswer').value;
+ const l=document.getElementById('customLevel').value;
+ if(!q || isNaN(ans)){ document.getElementById('customMsg').innerText="اكمل جميع الحقول"; return; }
+ const newQ={ text:q, answer:ans, options:[ans, ans+1, ans+2, ans+3] };
+ if(!models[l]) models[l]=[];
+ models[l].push(newQ);
+ localStorage.setItem('models',JSON.stringify(models));
+ document.getElementById('customMsg').innerText="تم الإضافة";
+ db.collection('config').doc('models').set({ models:models }); 
 }
 
-function prevModel(){ if(currentModel>0){ currentModel--; showModel(); } }
-function nextModel(){ if(currentModel < models.length-1){ currentModel++; showModel(); } }
+// ======== MODEL DISPLAY FOR TEACHER ========
+function showModel(){ document.getElementById('modelContainer').innerText=JSON.stringify(models[currentModel]||[]);}
+function prevModel(){ if(currentModel>0){currentModel--; showModel();} }
+function nextModel(){ if(currentModel<models.length-1){currentModel++; showModel();} }
 
-async function addTeacherQuestion(){
- let lvl = document.getElementById('customLevel').value;
- let txt = document.getElementById('customQuestion').value.trim();
- let ans = parseInt(document.getElementById('customAnswer').value);
- if(!txt || isNaN(ans)){ alert("ادخل السؤال والجواب"); return; }
- if(!models[currentModel]) models[currentModel] = [];
- models[currentModel].push({ text: txt, answer: ans, level: parseInt(lvl) });
- // حفظ محلي
- localStorage.setItem('models', JSON.stringify(models));
- // حفظ في Firestore (doc: config/models)
- try{
-   await db.collection('config').doc('models').set({ models: models });
-   document.getElementById('customMsg').textContent = "تم إضافة السؤال وحفظه على الخادم.";
- }catch(e){
-   console.error('خطأ بحفظ النموذج:', e);
-   document.getElementById('customMsg').textContent = "تم إضافة السؤال محلياً، لكنه لم يُحفظ على الخادم.";
- }
- document.getElementById('customQuestion').value = "";
- document.getElementById('customAnswer').value = "";
- showModel();
-}
-
-// ========== خيارات عشوائية للمحاولات ==========
-function shuffleOptions(correct){
- let opts = [correct];
- while(opts.length < 4){
-   let d = correct + Math.floor(Math.random()*7) - 3;
-   if(d < 0) d = Math.abs(d) + 1;
-   if(d > 200) d = Math.floor(Math.random()*100);
-   if(!opts.includes(d)) opts.push(d);
- }
- return opts.sort(()=>Math.random()-0.5);
-}
-
-// ======= helpers =======
-function escapeHtml(str){
-  if(str === undefined || str === null) return '';
-  return String(str).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-}
 </script>
 </body>
 </html>
