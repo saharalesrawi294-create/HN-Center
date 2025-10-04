@@ -1,209 +1,536 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HN-Center Mental Math</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HN-Center Mental Math</title>
+<style>
+/* --- حافظت على كل التنسيق الأصلي تماماً --- */
+body{
+  font-family:Arial, sans-serif;
+  text-align:center;
+  background:#fff;
+  color:#000;
+  direction:rtl;
+  margin:0;
+  padding:0;
+}
+.container{
+  max-width:750px;
+  margin:20px auto;
+  background:#fff;
+  padding:20px;
+  border-radius:15px;
+  box-shadow:0 0 15px rgba(0,0,0,0.2);
+}
+input,select,button{
+  padding:12px;
+  margin:8px;
+  border-radius:10px;
+  border:1px solid #0297b9;
+  font-size:16px;
+  width:80%;
+}
+button{
+  width:auto;
+  background:#e20e63;
+  color:white;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+  transition:0.3s;
+}
+button:hover{
+  background:#559a3e;
+  transform:scale(1.05);
+}
+.question-container{
+  background: linear-gradient(135deg, #eacd2e33, #e20e6333);
+  border-radius:12px;
+  padding:15px;
+  margin:15px 0;
+  position:relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.question-icon{
+  position:absolute;
+  top:10px;
+  left:10px;
+  width:30px;
+  height:30px;
+}
+.question{
+  font-size:24px;
+  margin:0;
+  color:#0297b9;
+}
+.options{
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:nowrap;
+  gap:10px;
+  margin-top:15px;
+}
+.options button{
+  flex:1;
+  margin:0 5px;
+  padding:12px;
+  border-radius:10px;
+  font-size:18px;
+  background:#eacd2e;
+  color:#000;
+  border:none;
+  transition:0.3s;
+}
+.options button.correct{background:#559a3e;color:white;}
+.options button.incorrect{background:#e20e63;color:white;}
+.options button:hover{transform:scale(1.05);}
+.hidden{display:none;}
+table{
+  border-collapse:collapse;
+  width:100%;
+  margin-top:10px;
+}
+th,td{
+  border:1px solid #0297b9;
+  padding:10px;
+  text-align:center;
+  background:#eacd2e;
+  color:#000;
+  font-weight:bold;
+}
+th{background:#e20e63;color:white;}
+.nav-btns button{
+  width:120px;
+  margin:5px;
+}
+#progressBar{
+  width:100%;
+  background:#eacd2e;
+  border-radius:10px;
+  overflow:hidden;
+  height:20px;
+  margin-top:10px;
+}
+#progress{
+  height:100%;
+  width:0%;
+  background:#0297b9;
+  transition:0.3s;
+  border-radius:10px;
+}
+#timer{
+  font-size:18px;
+  font-weight:bold;
+  margin-top:10px;
+  color:#e20e63;
+}
+
+/* overlay sign-in prompt */
+#authOverlay{
+  position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center; z-index:9999;
+}
+#authBox{ background:white; padding:20px; border-radius:12px; max-width:420px; width:95%; text-align:center; }
+#authBox h3{ margin-top:0; }
+.google-btn{ background:#4285F4; color:white; border:none; padding:12px 16px; border-radius:8px; cursor:pointer; font-weight:bold; }
+.small-muted{ color:#666; font-size:13px; margin-top:6px;}
+</style>
 </head>
-<body style="font-family: Arial, sans-serif; text-align: center;">
+<body>
 
-  <h1>🎓 HN-Center Mental Math</h1>
-  <div id="user-info" style="margin:20px;"></div>
-  <button id="login-btn">تسجيل الدخول بحساب Google</button>
-  <button id="logout-btn" style="display:none;">تسجيل الخروج</button>
-
-  <div id="game" style="display:none;">
-    <h2>العب وجمع النقاط!</h2>
-    <p id="question"></p>
-    <input id="answer" type="number" placeholder="اكتب جوابك">
-    <button onclick="checkAnswer()">إرسال</button>
-    <p id="feedback"></p>
-    <p>النتيجة: <span id="score">0</span></p>
+<!-- AUTH OVERLAY: يظهر أول ما يدخل الموقع ويجبر المستخدم يسجل بحساب Google -->
+<div id="authOverlay">
+  <div id="authBox">
+    <h3>أهلاً! رجاءً سجّل دخولك بحساب Google للمتابعة</h3>
+    <p class="small-muted">هذا يضمن أن نتائج كل طالب محفوظة بحسابه وستعود له في أي وقت.</p>
+    <button id="googleSignIn" class="google-btn">سجل دخول بحساب Google</button>
+    <p class="small-muted">(لو أنت المدرّس: يمكنك تسجيل الدخول هنا بنفس حسابك أو استخدم قسم "دخول المعلم" بعد إغلاق هذه النافذة)</p>
   </div>
+</div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<!-- الواجهة الأصلية (ما غيرت فيها شيء) -->
+<div class="container" id="login">
+<h2>تسجيل دخول الطالب</h2>
+<input type="text" id="studentName" placeholder="اسم الطالب"><br>
+<select id="level">
+<option value="0">المستوى 0</option>
+<option value="2">المستوى 2</option>
+</select><br>
+<button onclick="startExam()">دخول</button>
+<hr>
+<h3>تسجيل دخول المعلم</h3>
+<input type="text" id="teacherName" placeholder="اسم المعلم"><br>
+<input type="password" id="teacherPass" placeholder="كلمة المرور"><br>
+<button onclick="teacherLogin()">دخول المعلم</button>
+<p id="teacherMsg"></p>
+</div>
 
-  <script>
-    // ⚠️ حطي بيانات مشروعك هون من Firebase Console
-    const firebaseConfig = {
-      apiKey: "// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+<!-- صفحة الامتحان للطالب -->
+<div class="container hidden" id="exam">
+<h2 id="examTitle"></h2>
+<p id="timer">الوقت: 0:00</p>
+<p>السؤال <span id="qNum"></span> / <span id="totalQ">0</span></p>
+<div class="question-container">
+  <img src="https://img.icons8.com/color/48/000000/book.png" class="question-icon">
+  <div class="question" id="questionText"></div>
+</div>
+<div class="options" id="options"></div>
+<div id="progressBar"><div id="progress"></div></div>
+<div class="nav-btns">
+<button onclick="prevQ()">السابق</button>
+<button onclick="nextQ()">التالي</button>
+</div>
+</div>
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+<!-- صفحة النتائج -->
+<div class="container hidden" id="results">
+<h2>النتيجة</h2>
+<p>إجابات صحيحة: <span id="correctCount"></span></p>
+<p>إجابات خاطئة: <span id="wrongCount"></span></p>
+<p>الوقت المستغرق: <span id="timeSpent"></span> ثانية</p>
+<button onclick="location.reload()">إنهاء</button>
+</div>
+
+<!-- صفحة المعلم -->
+<div class="container hidden" id="archive">
+<h2>أرشيف المعلم</h2>
+<table>
+<thead><tr><th>اسم الطالب</th><th>المستوى</th><th>صح</th><th>مجموع</th><th>وقت</th><th>تاريخ</th></tr></thead>
+<tbody id="archiveBody"></tbody>
+</table>
+<div class="nav-btns">
+<button onclick="clearArchive()">مسح الأرشيف</button>
+<button onclick="backToLogin()">العودة للرئيسية</button>
+</div>
+
+<hr>
+<h3>نماذج الأسئلة</h3>
+<select id="modelSelect" onchange="showModel()">
+<option value="0">النموذج 1</option>
+<option value="1">النموذج 2</option>
+<option value="2">النموذج 3</option>
+</select>
+<div id="modelContainer"></div>
+<div class="nav-btns">
+<button onclick="prevModel()">النموذج السابق</button>
+<button onclick="nextModel()">النموذج التالي</button>
+</div>
+
+<h3>إضافة سؤال جديد للنموذج الحالي</h3>
+<select id="customLevel">
+<option value="0">المستوى 0</option>
+<option value="2">المستوى 2</option>
+</select><br>
+<input type="text" id="customQuestion" placeholder="صيغة السؤال مثلا: 2 + 3"><br>
+<input type="number" id="customAnswer" placeholder="الجواب الصحيح"><br>
+<button onclick="addTeacherQuestion()">أضف السؤال</button>
+<p id="customMsg"></p>
+</div>
+
+<!-- Firebase SDKs (compat لتسهيل الدمج مع الكود) -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+<script>
+// ========== Firebase config (من عندك) ==========
 const firebaseConfig = {
-  apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
-  authDomain: "hn-center.firebaseapp.com",
-  projectId: "hn-center",
-  storageBucket: "hn-center.firebasestorage.app",
-  messagingSenderId: "985828603143",
-  appId: "1:985828603143:web:499128a547e5d95fc401a2",
-  measurementId: "G-3XX7HH5G7S"
+  apiKey: "AIzaSyB37PGrijgQNNSeVXas_2iWVHf-0r8uUrs",
+  authDomain: "hn-center-2016.firebaseapp.com",
+  projectId: "hn-center-2016",
+  storageBucket: "hn-center-2016.firebasestorage.app",
+  messagingSenderId: "850632936429",
+  appId: "1:850632936429:web:011d212050a5cf6cc9b5e4",
+  measurementId: "G-RBWSZ2N83K"
 };
+// ========== init ==========
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);",
-      authDomain: "// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+// ======== local models fallback (حافظة التنسيق الأصلي) ========
+let models=[[],[],[]];
+if(localStorage.getItem('models')) models=JSON.parse(localStorage.getItem('models'));
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
-  authDomain: "hn-center.firebaseapp.com",
-  projectId: "hn-center",
-  storageBucket: "hn-center.firebasestorage.app",
-  messagingSenderId: "985828603143",
-  appId: "1:985828603143:web:499128a547e5d95fc401a2",
-  measurementId: "G-3XX7HH5G7S"
-};
+// ======== vars ========
+let studentName="", level=0, questions=[], answers=[], currentQ=0, startTime, timerInterval;
+let currentModel=0;
+let sessionDocId = null; // id الجلسة في Firestore إن ثبتت
+let currentUser = null;
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);.firebaseapp.com",
-      projectId: "// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+// ======== Auth overlay & sign-in ========
+const authOverlay = document.getElementById('authOverlay');
+document.getElementById('googleSignIn').addEventListener('click', ()=> {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err=>alert('خطأ بتسجيل الدخول: '+err.message));
+});
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
-  authDomain: "hn-center.firebaseapp.com",
-  projectId: "hn-center",
-  storageBucket: "hn-center.firebasestorage.app",
-  messagingSenderId: "985828603143",
-  appId: "1:985828603143:web:499128a547e5d95fc401a2",
-  measurementId: "G-3XX7HH5G7S"
-};
+// state change
+auth.onAuthStateChanged(user => {
+  currentUser = user;
+  if(user){
+    // أخفي الغلاف
+    authOverlay.style.display = 'none';
+    // عبيّل اسم الطالب تلقائياً لو فاضي
+    const nameInput = document.getElementById('studentName');
+    if(!nameInput.value) nameInput.value = user.displayName || user.email.split('@')[0];
+    // جلب النماذج من Firestore
+    loadModelsFromFirestore();
+  } else {
+    // أظهر الغلاف
+    authOverlay.style.display = 'flex';
+  }
+});
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);",
-      storageBucket: "XXXX.appspot.com",
-      messagingSenderId: "// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
-  authDomain: "hn-center.firebaseapp.com",
-  projectId: "hn-center",
-  storageBucket: "hn-center.firebasestorage.app",
-  messagingSenderId: "985828603143",
-  appId: "1:985828603143:web:499128a547e5d95fc401a2",
-  measurementId: "G-3XX7HH5G7S"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);",
-      appId: "// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
-  authDomain: "hn-center.firebaseapp.com",
-  projectId: "hn-center",
-  storageBucket: "hn-center.firebasestorage.app",
-  messagingSenderId: "985828603143",
-  appId: "1:985828603143:web:499128a547e5d95fc401a2",
-  measurementId: "G-3XX7HH5G7S"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);"
-    };
-
-    // تشغيل Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    let currentUser = null;
-    let score = 0;
-    let num1, num2;
-
-    // تسجيل الدخول بجوجل
-    document.getElementById("login-btn").addEventListener("click", () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider);
-    });
-
-    // تسجيل الخروج
-    document.getElementById("logout-btn").addEventListener("click", () => {
-      auth.signOut();
-    });
-
-    // متابعة حالة المستخدم
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        currentUser = user;
-        document.getElementById("user-info").innerHTML = `مرحباً، ${user.displayName}`;
-        document.getElementById("login-btn").style.display = "none";
-        document.getElementById("logout-btn").style.display = "inline";
-        document.getElementById("game").style.display = "block";
-        startGame();
-      } else {
-        currentUser = null;
-        document.getElementById("user-info").innerHTML = "";
-        document.getElementById("login-btn").style.display = "inline";
-        document.getElementById("logout-btn").style.display = "none";
-        document.getElementById("game").style.display = "none";
+// ========== load models from Firestore (or create default if missing) ==========
+async function loadModelsFromFirestore(){
+  try{
+    const docRef = db.collection('config').doc('models');
+    const doc = await docRef.get();
+    if(doc.exists){
+      const data = doc.data();
+      if(data && data.models && Array.isArray(data.models)) {
+        models = data.models;
+        localStorage.setItem('models', JSON.stringify(models)); // cache
       }
-    });
-
-    // لعبة بسيطة (جمع)
-    function startGame() {
-      num1 = Math.floor(Math.random() * 10);
-      num2 = Math.floor(Math.random() * 10);
-      document.getElementById("question").innerText = `كم حاصل ${num1} + ${num2} ؟`;
+    } else {
+      // إذا ما في models بالمشروع، أنشئ الدكومنت من القيم المحلية (لو في)
+      await docRef.set({ models: models });
     }
+  }catch(e){
+    console.error('خطأ بجلب النماذج:', e);
+  }
+}
 
-    function checkAnswer() {
-      const ans = parseInt(document.getElementById("answer").value);
-      if (ans === num1 + num2) {
-        document.getElementById("feedback").innerText = "صح ✅";
-        score++;
-      } else {
-        document.getElementById("feedback").innerText = "غلط ❌";
-      }
-      document.getElementById("score").innerText = score;
+// ========== الطالب: بداية الامتحان ==========
+function startExam(){
+ studentName = document.getElementById('studentName').value.trim();
+ level = document.getElementById('level').value;
+ if(!currentUser){
+   alert('يجب تسجيل الدخول أولاً بحساب Google');
+   return;
+ }
+ if(studentName===""){ alert("ادخل اسم الطالب"); return; }
+ loadExamQuestions();
+ if(questions.length===0){ alert("لا توجد أسئلة لهذا المستوى، المعلم يجب أن يضيف أسئلة."); return; }
+ document.getElementById('login').classList.add('hidden');
+ document.getElementById('exam').classList.remove('hidden');
+ document.getElementById('examTitle').textContent = "امتحان المستوى " + level;
+ document.getElementById('totalQ').textContent = questions.length;
+ startTime = Date.now();
+ startTimer();
+ showQ();
+ // حاول تحميل جلسة سابقة للمستخدم (لو حابب) - نتركه افتراضي
+}
 
-      // حفظ النتيجة
-      if (currentUser) {
-        db.collection("results").add({
-          uid: currentUser.uid,
-          name: currentUser.displayName,
-          score: score,
-          date: new Date().toISOString()
-        });
-      }
+// ========== تجهيز الأسئلة للطالب ==========
+function loadExamQuestions(){
+ questions = [];
+ answers = [];
+ // احصل على كل الأسئلة من النماذج المحفوظة
+ let allQs = [];
+ models.forEach(m => { if(Array.isArray(m)) allQs = allQs.concat(m); });
+ let lvlQs = allQs.filter(q => String(q.level) === String(level));
+ // اخلط وامثل
+ questions = shuffleArray(lvlQs);
+ answers = new Array(questions.length).fill(null);
+}
 
-      startGame();
-    }
-  </script>
+function shuffleArray(array){ return array.sort(()=>Math.random()-0.5); }
+
+// ========== عرض سؤال ========
+function showQ(){
+ let q = questions[currentQ];
+ document.getElementById('qNum').textContent = currentQ+1;
+ document.getElementById('questionText').textContent = q.text;
+ // توليد الخيارات إن لم توجد
+ q.options = q.options || shuffleOptions(q.answer);
+ let opsHTML = "";
+ q.options.forEach(o => {
+   let cls = "";
+   if(answers[currentQ] === o) cls = "correct";
+   opsHTML += `<button onclick="selectAnswer(${o}, this)" class="${cls}">${o}</button>`;
+ });
+ document.getElementById('options').innerHTML = opsHTML;
+ updateProgress();
+}
+
+// عندما يختار الطالب إجابة
+function selectAnswer(val, btn){
+ answers[currentQ] = val;
+ let buttons = document.querySelectorAll('.options button');
+ buttons.forEach(b => b.classList.remove('correct','incorrect'));
+ if(val === questions[currentQ].answer){ btn.classList.add('correct'); } else { btn.classList.add('incorrect'); }
+}
+
+// تنقل بين الأسئلة
+function prevQ(){ if(currentQ>0){ currentQ--; showQ(); } }
+function nextQ(){ if(currentQ<questions.length-1){ currentQ++; showQ(); } else { finishExam(); } }
+
+// ========== إنهاء الامتحان وحفظ النتيجة على Firestore ==========
+async function finishExam(){
+ clearInterval(timerInterval);
+ let correct = 0;
+ questions.forEach((q,i)=>{ if(answers[i] === q.answer) correct++; });
+ let wrong = questions.length - correct;
+ let timeSpent = Math.floor((Date.now() - startTime) / 1000);
+
+ // إظهار نتائج محلياً
+ document.getElementById('exam').classList.add('hidden');
+ document.getElementById('results').classList.remove('hidden');
+ document.getElementById('correctCount').textContent = correct;
+ document.getElementById('wrongCount').textContent = wrong;
+ document.getElementById('timeSpent').textContent = timeSpent;
+
+ // تجهيز بيانات الحفظ
+ const payload = {
+   uid: currentUser.uid,
+   email: currentUser.email || null,
+   name: studentName,
+   level: level,
+   correct: correct,
+   total: questions.length,
+   timeSpent: timeSpent,
+   attempts: questions.map((q,i) => ({
+     question: q.text,
+     given: answers[i],
+     correctAnswer: q.answer,
+     ok: answers[i] === q.answer
+   })),
+   timestamp: firebase.firestore.FieldValue.serverTimestamp()
+ };
+
+ // حفظ الجلسة في مجموعة sessions
+ try {
+   const res = await db.collection('sessions').add(payload);
+   sessionDocId = res.id;
+   // أيضاً خزن مرجع للطالب (optional) في doc users/{uid}
+   await db.collection('users').doc(currentUser.uid).set({
+     name: studentName,
+     email: currentUser.email || null,
+     lastSession: firebase.firestore.FieldValue.serverTimestamp()
+   }, { merge: true });
+ } catch(e){
+   console.error('خطأ بالحفظ في Firestore:', e);
+   // احتياط: خزن محلياً لو فشل
+   let archive = JSON.parse(localStorage.getItem('archive') || "[]");
+   archive.push({ name: studentName, level: level, correct: correct, total: questions.length, time: timeSpent, date: new Date().toLocaleString() });
+   localStorage.setItem('archive', JSON.stringify(archive));
+ }
+}
+
+// ========== Timer & Progress ==========
+function startTimer(){
+ timerInterval = setInterval(()=>{
+   let elapsed = Math.floor((Date.now() - startTime) / 1000);
+   let min = Math.floor(elapsed/60);
+   let sec = elapsed%60;
+   document.getElementById('timer').textContent = `الوقت: ${min}:${sec < 10 ? '0'+sec : sec}`;
+ },1000);
+}
+function updateProgress(){
+ let percent = Math.floor(((currentQ+1)/questions.length)*100);
+ document.getElementById('progress').style.width = percent + "%";
+}
+
+// ========== المعلم: واجهة الأرشيف (تق Reads من Firestore) ==========
+async function teacherLogin(){
+ let name = document.getElementById('teacherName').value.trim();
+ let pass = document.getElementById('teacherPass').value;
+ if(name==="نيرمين" && pass==="1234"){
+   document.getElementById('login').classList.add('hidden');
+   document.getElementById('archive').classList.remove('hidden');
+   await loadArchive(); // عرض من Firestore
+   showModel();
+ } else {
+   document.getElementById('teacherMsg').textContent = "لا يوجد وصول للأرشيف";
+ }
+}
+
+async function loadArchive(){
+  // جلب آخر 200 جلسة
+  try{
+    const snap = await db.collection('sessions').orderBy('timestamp','desc').limit(200).get();
+    const rows = [];
+    snap.forEach(doc => {
+      const d = doc.data();
+      const date = d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleString() : (d.date || '');
+      rows.push(`<tr><td>${escapeHtml(d.name||'مجهول')}</td><td>${escapeHtml(d.level||'')}</td><td>${d.correct}</td><td>${d.total}</td><td>${d.timeSpent}</td><td>${date}</td></tr>`);
+    });
+    document.getElementById('archiveBody').innerHTML = rows.join('') || '<tr><td colspan="6" class="small-muted">لا توجد سجلات</td></tr>';
+  }catch(e){
+    console.error('خطأ بتحميل الأرشيف:', e);
+    // fallback محلي
+    let archive = JSON.parse(localStorage.getItem('archive')||"[]");
+    let html="";
+    archive.forEach(a=>{ html+=`<tr><td>${a.name}</td><td>${a.level}</td><td>${a.correct}</td><td>${a.total}</td><td>${a.time}</td><td>${a.date}</td></tr>`; });
+    document.getElementById('archiveBody').innerHTML = html || '<tr><td colspan="6">لا توجد سجلات</td></tr>';
+  }
+}
+
+function clearArchive(){
+  // يمسح المحلي فقط؛ لحذف Firestore يتطلب صلاحيات إضافية — ننفّذ حدّف لجميع المستندات (حذر!)
+  if(!confirm('هل تريد مسح السجلات المحلية فقط؟ لحذف من Firestore يلزم صلاحية إضافية.')) return;
+  localStorage.removeItem('archive');
+  loadArchive();
+}
+function backToLogin(){ document.getElementById('archive').classList.add('hidden'); document.getElementById('login').classList.remove('hidden'); }
+
+// ========== نماذج المعلم (load/save إلى Firestore) ==========
+function showModel(){
+ let container = document.getElementById('modelContainer');
+ container.innerHTML = "";
+ let model = models[currentModel] || [];
+ if(model.length===0){ container.innerHTML = "<p>لا توجد أسئلة لهذا النموذج.</p>"; return; }
+ let html = "<table><tr><th>السؤال</th><th>المستوى</th><th>الجواب</th></tr>";
+ model.forEach((q,i)=>{ html += `<tr><td>${escapeHtml(q.text)}</td><td>${escapeHtml(q.level)}</td><td>${escapeHtml(q.answer)}</td></tr>`; });
+ html += "</table>";
+ container.innerHTML = html;
+ document.getElementById('modelSelect').value = currentModel;
+}
+
+function prevModel(){ if(currentModel>0){ currentModel--; showModel(); } }
+function nextModel(){ if(currentModel < models.length-1){ currentModel++; showModel(); } }
+
+async function addTeacherQuestion(){
+ let lvl = document.getElementById('customLevel').value;
+ let txt = document.getElementById('customQuestion').value.trim();
+ let ans = parseInt(document.getElementById('customAnswer').value);
+ if(!txt || isNaN(ans)){ alert("ادخل السؤال والجواب"); return; }
+ if(!models[currentModel]) models[currentModel] = [];
+ models[currentModel].push({ text: txt, answer: ans, level: parseInt(lvl) });
+ // حفظ محلي
+ localStorage.setItem('models', JSON.stringify(models));
+ // حفظ في Firestore (doc: config/models)
+ try{
+   await db.collection('config').doc('models').set({ models: models });
+   document.getElementById('customMsg').textContent = "تم إضافة السؤال وحفظه على الخادم.";
+ }catch(e){
+   console.error('خطأ بحفظ النموذج:', e);
+   document.getElementById('customMsg').textContent = "تم إضافة السؤال محلياً، لكنه لم يُحفظ على الخادم.";
+ }
+ document.getElementById('customQuestion').value = "";
+ document.getElementById('customAnswer').value = "";
+ showModel();
+}
+
+// ========== خيارات عشوائية للمحاولات ==========
+function shuffleOptions(correct){
+ let opts = [correct];
+ while(opts.length < 4){
+   let d = correct + Math.floor(Math.random()*7) - 3;
+   if(d < 0) d = Math.abs(d) + 1;
+   if(d > 200) d = Math.floor(Math.random()*100);
+   if(!opts.includes(d)) opts.push(d);
+ }
+ return opts.sort(()=>Math.random()-0.5);
+}
+
+// ======= helpers =======
+function escapeHtml(str){
+  if(str === undefined || str === null) return '';
+  return String(str).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+</script>
 </body>
 </html>
