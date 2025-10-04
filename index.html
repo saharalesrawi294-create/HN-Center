@@ -1,99 +1,209 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>لعبة الحساب الذهني</title>
-<style>
-  body{font-family:Arial,sans-serif;background:#f9f9f9;color:#222;margin:0;padding:20px;text-align:center}
-  h1{color:#0066cc}
-  .problem{font-size:32px;margin:20px 0}
-  input{padding:8px;font-size:20px;width:120px;text-align:center}
-  button{padding:10px 18px;margin:10px;border:none;background:#0066cc;color:#fff;border-radius:6px;cursor:pointer}
-  #results{margin-top:20px;text-align:right;max-width:500px;margin-inline:auto;background:#fff;padding:10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HN-Center Mental Math</title>
 </head>
-<body>
-  <h1>🔥 تحدي الحساب الذهني</h1>
-  <div>
-    <label>اسمك: <input id="playerName" placeholder="اكتب اسمك"></label>
-  </div>
-  <div class="problem" id="problem">اضغط ابدأ</div>
-  <input id="answer" type="number" placeholder="الإجابة" disabled>
-  <div>
-    <button id="startBtn">ابدأ</button>
-    <button id="submitBtn" disabled>أجب</button>
-  </div>
-  <p id="scoreText">النقاط: 0</p>
+<body style="font-family: Arial, sans-serif; text-align: center;">
 
-  <h2>📊 آخر النتائج</h2>
-  <div id="results">جارٍ التحميل...</div>
+  <h1>🎓 HN-Center Mental Math</h1>
+  <div id="user-info" style="margin:20px;"></div>
+  <button id="login-btn">تسجيل الدخول بحساب Google</button>
+  <button id="logout-btn" style="display:none;">تسجيل الخروج</button>
+
+  <div id="game" style="display:none;">
+    <h2>العب وجمع النقاط!</h2>
+    <p id="question"></p>
+    <input id="answer" type="number" placeholder="اكتب جوابك">
+    <button onclick="checkAnswer()">إرسال</button>
+    <p id="feedback"></p>
+    <p>النتيجة: <span id="score">0</span></p>
+  </div>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
   <script>
-    // ⚠️ الصقي بيانات firebaseConfig تبعك هون (من Firebase Console)
+    // ⚠️ حطي بيانات مشروعك هون من Firebase Console
     const firebaseConfig = {
-      apiKey: "PASTE_HERE",
-      authDomain: "PASTE_HERE",
-      projectId: "PASTE_HERE",
-      storageBucket: "PASTE_HERE",
-      messagingSenderId: "PASTE_HERE",
-      appId: "PASTE_HERE"
+      apiKey: "// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
+  authDomain: "hn-center.firebaseapp.com",
+  projectId: "hn-center",
+  storageBucket: "hn-center.firebasestorage.app",
+  messagingSenderId: "985828603143",
+  appId: "1:985828603143:web:499128a547e5d95fc401a2",
+  measurementId: "G-3XX7HH5G7S"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);",
+      authDomain: "// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
+  authDomain: "hn-center.firebaseapp.com",
+  projectId: "hn-center",
+  storageBucket: "hn-center.firebasestorage.app",
+  messagingSenderId: "985828603143",
+  appId: "1:985828603143:web:499128a547e5d95fc401a2",
+  measurementId: "G-3XX7HH5G7S"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);.firebaseapp.com",
+      projectId: "// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
+  authDomain: "hn-center.firebaseapp.com",
+  projectId: "hn-center",
+  storageBucket: "hn-center.firebasestorage.app",
+  messagingSenderId: "985828603143",
+  appId: "1:985828603143:web:499128a547e5d95fc401a2",
+  measurementId: "G-3XX7HH5G7S"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);",
+      storageBucket: "XXXX.appspot.com",
+      messagingSenderId: "// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
+  authDomain: "hn-center.firebaseapp.com",
+  projectId: "hn-center",
+  storageBucket: "hn-center.firebasestorage.app",
+  messagingSenderId: "985828603143",
+  appId: "1:985828603143:web:499128a547e5d95fc401a2",
+  measurementId: "G-3XX7HH5G7S"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);",
+      appId: "// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
+  authDomain: "hn-center.firebaseapp.com",
+  projectId: "hn-center",
+  storageBucket: "hn-center.firebasestorage.app",
+  messagingSenderId: "985828603143",
+  appId: "1:985828603143:web:499128a547e5d95fc401a2",
+  measurementId: "G-3XX7HH5G7S"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);"
     };
+
+    // تشغيل Firebase
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // عناصر
-    const problemEl = document.getElementById("problem");
-    const answerEl = document.getElementById("answer");
-    const scoreText = document.getElementById("scoreText");
-    const resultsEl = document.getElementById("results");
-    let current, score=0, total=0;
+    let currentUser = null;
+    let score = 0;
+    let num1, num2;
 
-    function newProblem(){
-      let a=Math.floor(Math.random()*10), b=Math.floor(Math.random()*10);
-      current={a,b,result:a+b};
-      problemEl.textContent=`${a} + ${b} = ?`;
-      answerEl.disabled=false;
-      document.getElementById("submitBtn").disabled=false;
-      answerEl.value="";
-      answerEl.focus();
+    // تسجيل الدخول بجوجل
+    document.getElementById("login-btn").addEventListener("click", () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider);
+    });
+
+    // تسجيل الخروج
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      auth.signOut();
+    });
+
+    // متابعة حالة المستخدم
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+        document.getElementById("user-info").innerHTML = `مرحباً، ${user.displayName}`;
+        document.getElementById("login-btn").style.display = "none";
+        document.getElementById("logout-btn").style.display = "inline";
+        document.getElementById("game").style.display = "block";
+        startGame();
+      } else {
+        currentUser = null;
+        document.getElementById("user-info").innerHTML = "";
+        document.getElementById("login-btn").style.display = "inline";
+        document.getElementById("logout-btn").style.display = "none";
+        document.getElementById("game").style.display = "none";
+      }
+    });
+
+    // لعبة بسيطة (جمع)
+    function startGame() {
+      num1 = Math.floor(Math.random() * 10);
+      num2 = Math.floor(Math.random() * 10);
+      document.getElementById("question").innerText = `كم حاصل ${num1} + ${num2} ؟`;
     }
 
-    document.getElementById("startBtn").onclick=()=>{
-      score=0; total=0;
-      scoreText.textContent="النقاط: 0";
-      newProblem();
-    };
+    function checkAnswer() {
+      const ans = parseInt(document.getElementById("answer").value);
+      if (ans === num1 + num2) {
+        document.getElementById("feedback").innerText = "صح ✅";
+        score++;
+      } else {
+        document.getElementById("feedback").innerText = "غلط ❌";
+      }
+      document.getElementById("score").innerText = score;
 
-    document.getElementById("submitBtn").onclick=()=>{
-      const val=parseInt(answerEl.value);
-      total++;
-      if(val===current.result) score++;
-      scoreText.textContent=`النقاط: ${score}/${total}`;
-      // حفظ بالـ Firebase
-      const name=document.getElementById("playerName").value||"مجهول";
-      db.collection("results").add({
-        name, q:`${current.a}+${current.b}`, given:val, ok:(val===current.result),
-        score, total, date:new Date().toISOString()
-      });
-      newProblem();
-      loadResults();
-    };
-
-    function loadResults(){
-      db.collection("results").orderBy("date","desc").limit(10).get().then(snap=>{
-        resultsEl.innerHTML="";
-        snap.forEach(doc=>{
-          const d=doc.data();
-          resultsEl.innerHTML+=`<div>👤 ${d.name} — ${d.q} = ${d.given} 
-            [${d.ok? "✅ صح":"❌ غلط"}] — نقاط: ${d.score}/${d.total}</div>`;
+      // حفظ النتيجة
+      if (currentUser) {
+        db.collection("results").add({
+          uid: currentUser.uid,
+          name: currentUser.displayName,
+          score: score,
+          date: new Date().toISOString()
         });
-      });
+      }
+
+      startGame();
     }
-    loadResults();
   </script>
 </body>
 </html>
