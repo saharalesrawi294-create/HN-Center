@@ -5,125 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HN-Center Mental Math</title>
 <style>
-body{
-  font-family:Arial, sans-serif;
-  text-align:center;
-  background:#fff;
-  color:#000;
-  direction:rtl;
-  margin:0;
-  padding:0;
-}
-.container{
-  max-width:750px;
-  margin:20px auto;
-  background:#fff;
-  padding:20px;
-  border-radius:15px;
-  box-shadow:0 0 15px rgba(0,0,0,0.2);
-}
-input,select,button{
-  padding:12px;
-  margin:8px;
-  border-radius:10px;
-  border:1px solid #0297b9;
-  font-size:16px;
-  width:80%;
-}
-button{
-  width:auto;
-  background:#e20e63;
-  color:white;
-  border:none;
-  cursor:pointer;
-  font-weight:bold;
-  transition:0.3s;
-}
-button:hover{
-  background:#559a3e;
-  transform:scale(1.05);
-}
-.question-container{
-  background: linear-gradient(135deg, #eacd2e33, #e20e6333);
-  border-radius:12px;
-  padding:15px;
-  margin:15px 0;
-  position:relative;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-.question-icon{
-  position:absolute;
-  top:10px;
-  left:10px;
-  width:30px;
-  height:30px;
-}
-.question{
-  font-size:24px;
-  margin:0;
-  color:#0297b9;
-}
-.options{
-  display:flex;
-  justify-content:space-between;
-  flex-wrap:nowrap;
-  gap:10px;
-  margin-top:15px;
-}
-.options button{
-  flex:1;
-  margin:0 5px;
-  padding:12px;
-  border-radius:10px;
-  font-size:18px;
-  background:#eacd2e;
-  color:#000;
-  border:none;
-  transition:0.3s;
-}
+body{font-family:Arial,sans-serif;text-align:center;background:#fff;color:#000;direction:rtl;margin:0;padding:0;}
+.container{max-width:750px;margin:20px auto;background:#fff;padding:20px;border-radius:15px;box-shadow:0 0 15px rgba(0,0,0,0.2);}
+input,select,button{padding:12px;margin:8px;border-radius:10px;border:1px solid #0297b9;font-size:16px;width:80%;}
+button{width:auto;background:#e20e63;color:white;border:none;cursor:pointer;font-weight:bold;transition:0.3s;}
+button:hover{background:#559a3e;transform:scale(1.05);}
+.question-container{background:linear-gradient(135deg,#eacd2e33,#e20e6333);border-radius:12px;padding:15px;margin:15px 0;position:relative;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+.question-icon{position:absolute;top:10px;left:10px;width:30px;height:30px;}
+.question{font-size:24px;margin:0;color:#0297b9;}
+.options{display:flex;justify-content:space-between;flex-wrap:nowrap;gap:10px;margin-top:15px;}
+.options button{flex:1;margin:0 5px;padding:12px;border-radius:10px;font-size:18px;background:#eacd2e;color:#000;border:none;transition:0.3s;}
 .options button.correct{background:#559a3e;color:white;}
 .options button.incorrect{background:#e20e63;color:white;}
 .options button:hover{transform:scale(1.05);}
 .hidden{display:none;}
-table{
-  border-collapse:collapse;
-  width:100%;
-  margin-top:10px;
-}
-th,td{
-  border:1px solid #0297b9;
-  padding:10px;
-  text-align:center;
-  background:#eacd2e;
-  color:#000;
-  font-weight:bold;
-}
+table{border-collapse:collapse;width:100%;margin-top:10px;}
+th,td{border:1px solid #0297b9;padding:10px;text-align:center;background:#eacd2e;color:#000;font-weight:bold;}
 th{background:#e20e63;color:white;}
-.nav-btns button{
-  width:120px;
-  margin:5px;
-}
-#progressBar{
-  width:100%;
-  background:#eacd2e;
-  border-radius:10px;
-  overflow:hidden;
-  height:20px;
-  margin-top:10px;
-}
-#progress{
-  height:100%;
-  width:0%;
-  background:#0297b9;
-  transition:0.3s;
-  border-radius:10px;
-}
-#timer{
-  font-size:18px;
-  font-weight:bold;
-  margin-top:10px;
-  color:#e20e63;
-}
+.nav-btns button{width:120px;margin:5px;}
+#progressBar{width:100%;background:#eacd2e;border-radius:10px;overflow:hidden;height:20px;margin-top:10px;}
+#progress{height:100%;width:0%;background:#0297b9;transition:0.3s;border-radius:10px;}
+#timer{font-size:18px;font-weight:bold;margin-top:10px;color:#e20e63;}
 </style>
 </head>
 <body>
@@ -144,7 +46,6 @@ th{background:#e20e63;color:white;}
 <p id="teacherMsg"></p>
 </div>
 
-<!-- صفحة الامتحان للطالب -->
 <div class="container hidden" id="exam">
 <h2 id="examTitle"></h2>
 <p id="timer">الوقت: 0:00</p>
@@ -161,7 +62,6 @@ th{background:#e20e63;color:white;}
 </div>
 </div>
 
-<!-- صفحة النتائج -->
 <div class="container hidden" id="results">
 <h2>النتيجة</h2>
 <p>إجابات صحيحة: <span id="correctCount"></span></p>
@@ -170,7 +70,6 @@ th{background:#e20e63;color:white;}
 <button onclick="location.reload()">إنهاء</button>
 </div>
 
-<!-- صفحة المعلم -->
 <div class="container hidden" id="archive">
 <h2>أرشيف المعلم</h2>
 <table>
@@ -178,24 +77,9 @@ th{background:#e20e63;color:white;}
 <tbody id="archiveBody"></tbody>
 </table>
 <div class="nav-btns">
-<button onclick="clearArchive()">مسح الأرشيف</button>
 <button onclick="backToLogin()">العودة للرئيسية</button>
 </div>
-
-<hr>
-<h3>نماذج الأسئلة</h3>
-<select id="modelSelect" onchange="showModel()">
-<option value="0">النموذج 1</option>
-<option value="1">النموذج 2</option>
-<option value="2">النموذج 3</option>
-</select>
-<div id="modelContainer"></div>
-<div class="nav-btns">
-<button onclick="prevModel()">النموذج السابق</button>
-<button onclick="nextModel()">النموذج التالي</button>
-</div>
-
-<h3>إضافة سؤال جديد للنموذج الحالي</h3>
+<h3>إضافة سؤال جديد</h3>
 <select id="customLevel">
 <option value="0">المستوى 0</option>
 <option value="2">المستوى 2</option>
@@ -206,19 +90,30 @@ th{background:#e20e63;color:white;}
 <p id="customMsg"></p>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.6.1/firebase-firestore.js"></script>
 <script>
-let studentName="",level=0,questions=[],answers=[],currentQ=0,startTime,timerInterval;
-let currentModel=0;
-let models=[[],[],[]]; // 3 نماذج فارغة
-if(localStorage.getItem('models')) models=JSON.parse(localStorage.getItem('models'));
+const firebaseConfig = {
+  apiKey: "AIzaSyCc5z1m7qYrBhwosbp7XNQK2vgSjDgz8yE",
+  authDomain: "hn-center.firebaseapp.com",
+  projectId: "hn-center",
+  storageBucket: "hn-center.appspot.com",
+  messagingSenderId: "985828603143",
+  appId: "1:985828603143:web:defd2e10a864825dc401a2",
+  measurementId: "G-RTE2ZPTHM1"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let studentName="", level=0, questions=[], answers=[], currentQ=0, startTime, timerInterval;
 
 // ======= الطالب =======
-function startExam(){
+async function startExam(){
  studentName=document.getElementById('studentName').value.trim();
- level=document.getElementById('level').value;
- if(studentName===""){alert("ادخل اسم الطالب");return;}
- loadExamQuestions();
- if(questions.length===0){alert("لا توجد أسئلة لهذا المستوى، المعلم يجب أن يضيف أسئلة."); return;}
+ level=parseInt(document.getElementById('level').value);
+ if(!studentName){alert("ادخل اسم الطالب"); return;}
+ await loadExamQuestions();
+ if(questions.length===0){alert("لا توجد أسئلة لهذا المستوى"); return;}
  document.getElementById('login').classList.add('hidden');
  document.getElementById('exam').classList.remove('hidden');
  document.getElementById('examTitle').textContent="امتحان المستوى "+level;
@@ -228,22 +123,31 @@ function startExam(){
  showQ();
 }
 
-function loadExamQuestions(){
+async function loadExamQuestions(){
  questions=[];
  answers=[];
- let allQs=models.flat();
- let lvlQs=allQs.filter(q=>q.level==level);
- questions=shuffleArray(lvlQs);
+ const snapshot = await db.collection("hn").where("level","==",level).get();
+ snapshot.forEach(doc => questions.push(doc.data()));
  answers=new Array(questions.length).fill(null);
 }
 
-function shuffleArray(array){return array.sort(()=>Math.random()-0.5);}
+function shuffleArray(arr){return arr.sort(()=>Math.random()-0.5);}
+function shuffleOptions(correct){
+ let opts=[correct];
+ while(opts.length<4){
+   let d=correct+Math.floor(Math.random()*5)-2;
+   if(d<1)d=1;if(d>99)d=99;
+   if(!opts.includes(d)) opts.push(d);
+ }
+ return shuffleArray(opts);
+}
+
 function showQ(){
  let q=questions[currentQ];
  document.getElementById('qNum').textContent=currentQ+1;
  document.getElementById('questionText').textContent=q.text;
- let opsHTML="";
  q.options=q.options||shuffleOptions(q.answer);
+ let opsHTML="";
  q.options.forEach(o=>{
    let cls="";
    if(answers[currentQ]===o) cls="correct";
@@ -252,17 +156,19 @@ function showQ(){
  document.getElementById('options').innerHTML=opsHTML;
  updateProgress();
 }
+
 function selectAnswer(val,btn){
  answers[currentQ]=val;
- let buttons=document.querySelectorAll('.options button');
- buttons.forEach(b=>b.classList.remove('correct','incorrect'));
- if(val===questions[currentQ].answer){btn.classList.add('correct');}else{btn.classList.add('incorrect');}
+ document.querySelectorAll('.options button').forEach(b=>b.classList.remove('correct','incorrect'));
+ if(val===questions[currentQ].answer) btn.classList.add('correct'); else btn.classList.add('incorrect');
 }
+
 function prevQ(){if(currentQ>0){currentQ--;showQ();}}
 function nextQ(){if(currentQ<questions.length-1){currentQ++;showQ();}else{finishExam();}}
-function finishExam(){
+
+async function finishExam(){
  clearInterval(timerInterval);
- let correct=0; questions.forEach((q,i)=>{if(answers[i]===q.answer)correct++;});
+ let correct=0; questions.forEach((q,i)=>{if(answers[i]===q.answer) correct++;});
  let wrong=questions.length-correct;
  let timeSpent=Math.floor((Date.now()-startTime)/1000);
  document.getElementById('exam').classList.add('hidden');
@@ -270,12 +176,17 @@ function finishExam(){
  document.getElementById('correctCount').textContent=correct;
  document.getElementById('wrongCount').textContent=wrong;
  document.getElementById('timeSpent').textContent=timeSpent;
- let archive=JSON.parse(localStorage.getItem('archive')||"[]");
- archive.push({name:studentName,level:level,correct:correct,total:questions.length,time:timeSpent,date:new Date().toLocaleString()});
- localStorage.setItem('archive',JSON.stringify(archive));
+
+ await db.collection("archive").add({
+   name:studentName,
+   level:level,
+   correct:correct,
+   total:questions.length,
+   time:timeSpent,
+   date:new Date().toLocaleString()
+ });
 }
 
-// ======= Timer & Progress =======
 function startTimer(){
  timerInterval=setInterval(()=>{
    let elapsed=Math.floor((Date.now()-startTime)/1000);
@@ -284,72 +195,46 @@ function startTimer(){
    document.getElementById('timer').textContent=`الوقت: ${min}:${sec<10?'0'+sec:sec}`;
  },1000);
 }
+
 function updateProgress(){
  let percent=Math.floor(((currentQ+1)/questions.length)*100);
  document.getElementById('progress').style.width=percent+"%";
 }
 
 // ======= المعلم =======
-function teacherLogin(){
+async function teacherLogin(){
  let name=document.getElementById('teacherName').value.trim();
  let pass=document.getElementById('teacherPass').value;
  if(name==="نيرمين" && pass==="1234"){
    document.getElementById('login').classList.add('hidden');
    document.getElementById('archive').classList.remove('hidden');
    loadArchive();
-   showModel();
- }else{document.getElementById('teacherMsg').textContent="لا يوجد وصول للأرشيف";}
+ }else{document.getElementById('teacherMsg').textContent="لا يوجد وصول";}
 }
 
-function loadArchive(){
- let archive=JSON.parse(localStorage.getItem('archive')||"[]");
+async function loadArchive(){
+ const snapshot = await db.collection("archive").get();
  let html="";
- archive.forEach(a=>{html+=`<tr><td>${a.name}</td><td>${a.level}</td><td>${a.correct}</td><td>${a.total}</td><td>${a.time}</td><td>${a.date}</td>`;});
+ snapshot.forEach(doc=>{
+   let a=doc.data();
+   html+=`<tr>
+     <td>${a.name}</td><td>${a.level}</td><td>${a.correct}</td><td>${a.total}</td><td>${a.time}</td><td>${a.date}</td>
+   </tr>`;
+ });
  document.getElementById('archiveBody').innerHTML=html;
 }
-function clearArchive(){localStorage.removeItem('archive'); loadArchive();}
-function backToLogin(){document.getElementById('archive').classList.add('hidden'); document.getElementById('login').classList.remove('hidden');}
 
-// ======= نماذج المعلم =======
-function showModel(){
- let container=document.getElementById('modelContainer');
- container.innerHTML="";
- let model=models[currentModel]||[];
- if(model.length===0){container.innerHTML="<p>لا توجد أسئلة لهذا النموذج.</p>"; return;}
- let html="<table><tr><th>السؤال</th><th>المستوى</th><th>الجواب</th></tr>";
- model.forEach((q,i)=>{html+=`<tr><td>${q.text}</td><td>${q.level}</td><td>${q.answer}</td></tr>`;});
- html+="</table>";
- container.innerHTML=html;
- document.getElementById('modelSelect').value=currentModel;
-}
-function prevModel(){if(currentModel>0){currentModel--; showModel();}}
-function nextModel(){if(currentModel<models.length-1){currentModel++; showModel();}}
-
-function addTeacherQuestion(){
- let lvl=document.getElementById('customLevel').value;
+async function addTeacherQuestion(){
+ let lvl=parseInt(document.getElementById('customLevel').value);
  let txt=document.getElementById('customQuestion').value.trim();
  let ans=parseInt(document.getElementById('customAnswer').value);
  if(!txt || isNaN(ans)){alert("ادخل السؤال والجواب"); return;}
- if(!models[currentModel]) models[currentModel]=[];
- models[currentModel].push({text:txt,answer:ans,level:parseInt(lvl)});
- localStorage.setItem('models',JSON.stringify(models));
+ // ✅ تم التعديل هنا لتكون نفس Collection اللي بيقرأ منها الطالب
+ await db.collection("hn").add({text:txt, answer:ans, level:lvl});
  document.getElementById('customQuestion').value="";
  document.getElementById('customAnswer').value="";
  document.getElementById('customMsg').textContent="تم إضافة السؤال!";
- showModel();
-}
-
-// ======= خيارات عشوائية =======
-function shuffleOptions(correct){
- let opts=[correct];
- while(opts.length<4){
-   let d=correct+Math.floor(Math.random()*5)-2;
-   if(d<1)d=1;if(d>99)d=99;
-   if(!opts.includes(d))opts.push(d);
- }
- return opts.sort(()=>Math.random()-0.5);
 }
 </script>
 </body>
 </html>
-
